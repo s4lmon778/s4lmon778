@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">s4lmon — practical software, thoughtful interfaces</title>
+  <desc id="desc">A dark green banner with understated geometric tiles.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b1715"/><stop offset="1" stop-color="#122d25"/></linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#a6e3bc" stroke-opacity=".045"/></pattern>
+  </defs>
+  <rect width="1200" height="300" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="300" rx="18" fill="url(#grid)"/>
+  <rect x="56" y="53" width="28" height="3" rx="1.5" fill="#91dfaa"/>
+  <text x="99" y="61" fill="#a1c5b4" font-family="Segoe UI,Arial,sans-serif" font-size="16" letter-spacing="4">S4LMON</text>
+  <g fill="#edf6f0" font-family="Segoe UI,Arial,sans-serif" font-size="43" font-weight="600" letter-spacing="-1">
+    <text x="56" y="133">Practical software.</text><text x="56" y="187">Thoughtful interfaces.</text>
+  </g>
+  <text x="58" y="239" fill="#98baa8" font-family="Segoe UI,Arial,sans-serif" font-size="16" letter-spacing=".5">PYTHON / TYPESCRIPT / DATA / TOOLS</text>
+  <g transform="translate(840 54)" stroke="#d7ffe0" stroke-opacity=".08">
+    <g fill="#1d4837"><rect x="0" y="80" width="34" height="34" rx="7"/><rect x="40" y="40" width="34" height="34" rx="7"/><rect x="80" y="160" width="34" height="34" rx="7"/><rect x="120" y="0" width="34" height="34" rx="7"/><rect x="160" y="120" width="34" height="34" rx="7"/><rect x="200" y="80" width="34" height="34" rx="7"/><rect x="240" y="160" width="34" height="34" rx="7"/></g>
+    <g fill="#367b52"><rect x="40" y="120" width="34" height="34" rx="7"/><rect x="80" y="40" width="34" height="34" rx="7"/><rect x="120" y="80" width="34" height="34" rx="7"/><rect x="160" y="160" width="34" height="34" rx="7"/><rect x="200" y="0" width="34" height="34" rx="7"/><rect x="240" y="40" width="34" height="34" rx="7"/></g>
+    <g fill="#72be85"><rect x="80" y="80" width="34" height="34" rx="7"/><rect x="120" y="120" width="34" height="34" rx="7"/><rect x="160" y="40" width="34" height="34" rx="7"/><rect x="200" y="120" width="34" height="34" rx="7"/></g>
+    <g fill="#b4e4b5"><rect x="120" y="40" width="34" height="34" rx="7"/><rect x="160" y="80" width="34" height="34" rx="7"/></g>
+  </g>
+</svg>
