@@ -1,16 +1,15 @@
 <p align="center">
-  <img src="assets/banner.svg?v=9" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" />
+  <img src="assets/banner.svg?v=10" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" />
 </p>
 
-<p align="center"><samp>✧ &nbsp; below the surface &nbsp; · &nbsp; among the stars &nbsp; ✧</samp></p>
+<p><sub>Desktop tools, web interfaces, and data experiments.</sub></p>
 
-<img src="assets/deep-space-divider.svg" alt="A constellation above an ocean wave" width="100%" />
+<p><img src="assets/badge-python.svg" alt="Python" height="18" /> <img src="assets/badge-typescript.svg" alt="TypeScript" height="18" /> <img src="assets/badge-rust.svg" alt="Rust" height="18" /> <img src="assets/badge-react.svg" alt="React" height="18" /> <img src="assets/badge-tauri.svg" alt="Tauri" height="18" /> <img src="assets/badge-sqlite.svg" alt="SQLite" height="18" /></p>
 
-### ⊹ Below the Surface
+<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="420" /></a>
 
-I build desktop tools, web interfaces, and data experiments, with an interest in useful automation and thoughtful visuals.
-
-### ✧ The Constellation
+<details>
+<summary><sub>Full toolbox</sub></summary>
 
 <samp>LANGUAGES &amp; FORMATS</samp>
 
@@ -32,10 +31,4 @@ I build desktop tools, web interfaces, and data experiments, with an interest in
 
 <p><code>Orca</code> <code>VS Code</code> <code>Codex</code> <code>Claude Code</code> <code>ChatGPT</code> <code>DeepSeek</code></p>
 
-<img src="assets/deep-space-divider.svg" alt="A constellation above an ocean wave" width="100%" />
-
-### ≋ Open Waters
-
-<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · stablyai/orca · 135k+ GitHub stars" width="100%" /></a>
-
-<p align="center"><samp>⋆ &nbsp; ∞ &nbsp; ≋ &nbsp; ✧ &nbsp; ≋ &nbsp; ∞ &nbsp; ⋆</samp></p>
+</details>
