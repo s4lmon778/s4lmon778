@@ -1,12 +1,11 @@
 <p align="center">
-  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" />
+  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>
+  <img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>
+  <img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/links.svg" alt="" width="79.8916%" align="top" /><a href="https://www.linkedin.com/in/chen778"><img src="assets/link-linkedin.svg" alt="LinkedIn" width="9.9249%" align="top" /></a><a href="https://ucsd.joinhandshake.com/profiles/uwu7a3"><img src="assets/link-handshake.svg" alt="Handshake" width="10.1833%" align="top" /></a><br>
+  <img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/about.svg" alt="Desktop tools, web interfaces, and data experiments. Python, TypeScript, Rust, React, Tauri, SQLite." width="100%" align="top" /><br>
+  <a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="43%" align="top" /></a><img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/orca-side.svg" alt="" width="57%" align="top" /><br>
+  <img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/tail.svg" alt="" width="100%" align="top" />
 </p>
-
-<p><sub>Desktop tools, web interfaces, and data experiments.</sub></p>
-
-<p><img src="assets/badge-python.svg" alt="Python" height="18" /> <img src="assets/badge-typescript.svg" alt="TypeScript" height="18" /> <img src="assets/badge-rust.svg" alt="Rust" height="18" /> <img src="assets/badge-react.svg" alt="React" height="18" /> <img src="assets/badge-tauri.svg" alt="Tauri" height="18" /> <img src="assets/badge-sqlite.svg" alt="SQLite" height="18" /></p>
-
-<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="420" /></a>
 
 <details>
 <summary><sub>Full toolbox</sub></summary>

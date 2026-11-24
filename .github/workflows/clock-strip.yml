@@ -1,0 +1,44 @@
+name: Clock
+
+# Redraws the 罗盘 clock tiles that sit under the banner (strip, links, about,
+# orca-side, tail) and force-pushes them as the only commit on the `clock`
+# branch, so main's history stays clean. Between runs the rings keep turning on
+# their own with CSS, so a slow refresh is enough.
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["clock/**", "assets/badge-*.svg", ".github/workflows/clock-strip.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clock
+  cancel-in-progress: true
+
+jobs:
+  draw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            clock
+            assets
+      - name: Draw tiles
+        run: python3 clock/build_canvas.py "$RUNNER_TEMP/out"
+      - name: Publish to the clock branch
+        working-directory: ${{ runner.temp }}/out
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init -q -b clock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- *.svg
+          git commit -q -m "Redraw clock tiles"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" clock
