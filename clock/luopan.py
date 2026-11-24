@@ -36,22 +36,26 @@ W = 1200
 CENTER = (-34, 66)          # clock centre: just past the left edge, about where the README box edge sits
 SCALE = 1.12
 DIVIDER_X = 620             # the bright row ends before this line; the sparkline gets everything to its right
-SPARK = (652, 38, 540, 62)  # x, y, width, height inside the strip
+SPARK = (652, 31, 540, 78)  # x, y, width, height inside the strip (clock untouched; strip stays 132 tall)
 
-BADGE_H = 26                # the 18 px badges at desktop width
-BADGE_GAP = 6
+# Below the strip the page keeps the strip's two columns: text over the rings on the
+# left, and links + the Orca card on the right, lined up with the sparkline's edges.
+COL_X, COL_W = SPARK[0], SPARK[2]
+BADGE_H = 30                # badges sized to sit with the clock's labels
+BADGE_GAP = 8
+ABOUT_SIZE = 20             # description text, close to the clock's label size
 LINKS = [("linkedin", "https://www.linkedin.com/in/chen778", "LinkedIn"),
          ("handshake", "https://ucsd.joinhandshake.com/profiles/uwu7a3", "Handshake")]
 LANGS = ["python", "typescript", "rust", "react", "tauri", "sqlite"]
 ABOUT = "Desktop tools, web interfaces, and data experiments."
-ORCA_FRACTION = 0.43        # Orca card width as a share of the row
 ORCA_ASPECT = 1200 / 190
 
+# Every row is at least ~82 units tall: on a phone that is still taller than one
+# 24 px text line, which is what keeps the stacked images from opening gaps.
 ROW_STRIP = 132
-ROW_LINKS = 84
-ROW_ABOUT = 90
-ROW_ORCA = W * ORCA_FRACTION / ORCA_ASPECT
-ROW_TAIL = 96
+ROW_INTRO = 84
+ROW_STACK = COL_W / ORCA_ASPECT
+ROW_TAIL = 90
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
@@ -234,19 +238,19 @@ def sparkline(days: list[dict], x: float, y: float, w: float, h: float) -> str:
         '<stop offset="1" stop-color="#b9a0e9" stop-opacity="0"/></linearGradient></defs>'
         f'<path d="M{x} {y + h + .5:.1f}H{x + w}" stroke="#b9a0e9" stroke-opacity=".16"/>'
         f'<path d="{d} L{x + w:.1f},{y + h:.1f} L{x:.1f},{y + h:.1f} Z" fill="url(#sp-area)"/>'
-        f'<path d="{d}" fill="none" stroke="url(#sp-line)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>'
-        f'<circle cx="{X(peak):.1f}" cy="{Y(counts[peak]):.1f}" r="2.6" fill="#b9a0e9"/>'
-        f'<circle cx="{X(n - 1):.1f}" cy="{Y(counts[-1]):.1f}" r="2.2" fill="#92d8cf"/>'
-        f'<text {mono} x="{x}" y="{y - 14}" font-size="10" letter-spacing="1.5">{total} PUBLIC CONTRIBUTIONS · {n} DAYS</text>'
-        f'<text {mono} x="{x}" y="{y + h + 14}" font-size="9.5" letter-spacing="1">{day(days[0]["date"])}</text>'
-        f'<text {mono} x="{x + w}" y="{y + h + 14}" font-size="9.5" letter-spacing="1" text-anchor="end">{day(days[-1]["date"])}</text>'
+        f'<path d="{d}" fill="none" stroke="url(#sp-line)" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>'
+        f'<circle cx="{X(peak):.1f}" cy="{Y(counts[peak]):.1f}" r="3" fill="#b9a0e9"/>'
+        f'<circle cx="{X(n - 1):.1f}" cy="{Y(counts[-1]):.1f}" r="2.6" fill="#92d8cf"/>'
+        f'<text {mono} x="{x}" y="{y - 13}" font-size="11" letter-spacing="1.5">{total} PUBLIC CONTRIBUTIONS · {n} DAYS</text>'
+        f'<text {mono} x="{x}" y="{y + h + 15}" font-size="10.5" letter-spacing="1">{day(days[0]["date"])}</text>'
+        f'<text {mono} x="{x + w}" y="{y + h + 15}" font-size="10.5" letter-spacing="1" text-anchor="end">{day(days[-1]["date"])}</text>'
     )
 
 
 # ------------------------------------------------------------------ badges
 
 def _badge(name: str) -> tuple[float, str]:
-    """An existing 20-unit badge SVG, scaled to the 18 px row height; returns (width, data URI)."""
+    """An existing 20-unit badge SVG, scaled to BADGE_H; returns (width, data URI)."""
     src = (ASSETS / f"badge-{name}.svg").read_text(encoding="utf-8")
     w = float(src.split('width="', 1)[1].split('"', 1)[0]) * BADGE_H / 20
     return w, "data:image/svg+xml;base64," + base64.b64encode(src.encode()).decode()
@@ -280,20 +284,23 @@ def _view(x0: float, y0: float, w: float, h: float):
     return (CENTER[0] - x0, CENTER[1] - y0, SCALE, w, h)
 
 
+Y_INTRO = ROW_STRIP
+Y_STACK = Y_INTRO + ROW_INTRO
+Y_TAIL = Y_STACK + ROW_STACK
+TEXT_MID = 49               # the description and the link badges share this centre line in the intro row
+
+
 def rows() -> list[tuple[str, float, float, float, float]]:
-    """(name, x0, y0, width, height) of every clock tile, in canvas units."""
-    links = sum(link_widths())
-    y_links = ROW_STRIP
-    y_about = y_links + ROW_LINKS
-    y_orca = y_about + ROW_ABOUT
-    y_tail = y_orca + ROW_ORCA
-    orca_w = W * ORCA_FRACTION
+    """(name, x0, y0, width, height) of every live clock tile, in canvas units.
+
+    Only the left column carries rings (the clock never reaches past x = 600), so the
+    right column is plain linked images: the badges and the Orca card.
+    """
     return [
         ("strip", 0, 0, W, ROW_STRIP),
-        ("links", 0, y_links, W - links, ROW_LINKS),
-        ("about", 0, y_about, W, ROW_ABOUT),
-        ("orca-side", orca_w, y_orca, W - orca_w, ROW_ORCA),
-        ("tail", 0, y_tail, W, ROW_TAIL),
+        ("intro", 0, Y_INTRO, COL_X, ROW_INTRO),
+        ("stack", 0, Y_STACK, COL_X, ROW_STACK),
+        ("tail", 0, Y_TAIL, COL_X, ROW_TAIL),
     ]
 
 
@@ -303,58 +310,53 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     out = {}
     for name, x0, y0, w, h in rows():
         view = _view(x0, y0, w, h)
+        rings = _clock(t, view, highlight=name == "strip", guide=name == "strip")
         if name == "strip":
-            body = (_clock(t, view, highlight=True, guide=True)
-                    + f'<path d="M{DIVIDER_X} 22V{h - 22}" stroke="#b9a0e9" stroke-opacity=".16"/>'
+            body = (rings + f'<path d="M{DIVIDER_X} 22V{h - 22}" stroke="#b9a0e9" stroke-opacity=".16"/>'
                     + sparkline(days, *SPARK))
             title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z}, beside {sum(d['count'] for d in days)} public contributions over {len(days)} days"
             out[name] = _svg(w, h, body, title=title, style=style)
-        elif name == "about":
-            body = (_clock(t, view, highlight=False, guide=False)
-                    + f'<text class="lp-txt" x="0" y="30" font-size="15.2" font-family="{UI_FONT}">{escape(ABOUT)}</text>'
-                    + _badge_row(LANGS, 0, 46))
-            out[name] = _svg(w, h, body, title=ABOUT, style=style)
-        elif name == "tail":
+        elif name == "intro":
+            text = (f'<text class="lp-txt" x="0" y="{TEXT_MID + ABOUT_SIZE * .36:.1f}" font-size="{ABOUT_SIZE}" '
+                    f'font-family="{UI_FONT}">{escape(ABOUT)}</text>')
+            out[name] = _svg(w, h, rings + text, title=ABOUT, style=style)
+        elif name == "stack":
+            out[name] = _svg(w, h, rings + _badge_row(LANGS, 0, 6), title="Python, TypeScript, Rust, React, Tauri, SQLite", style=style)
+        else:
             # the clock fades out here, just above the toolbox
             defs = (f'<linearGradient id="fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="{h:.1f}">'
                     '<stop stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
                     f'<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="{w}" height="{h:.1f}">'
                     f'<rect width="{w}" height="{h:.1f}" fill="url(#fade)"/></mask>')
-            body = f'<g mask="url(#m)">{_clock(t, view, highlight=False, guide=False)}</g>'
-            out[name] = _svg(w, h, body, title="", style=style, defs=defs)
-        else:
-            out[name] = _svg(w, h, _clock(t, view, highlight=False, guide=False), title="", style=style)
+            out[name] = _svg(w, h, f'<g mask="url(#m)">{rings}</g>', title="", style=style, defs=defs)
     return out
 
 
 def link_tile(name: str) -> str:
-    """Static tile for one linked badge; the clock never reaches this far right, so it has no rings."""
+    """Static tile for one linked badge in the right column (no rings reach it)."""
     widths = dict(zip([n for n, _, _ in LINKS], link_widths()))
     label = {n: l for n, _, l in LINKS}[name]
-    w = widths[name]
     bw, uri = _badge(name)
-    body = f'<image x="0" y="14" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
-    return _svg(w, ROW_LINKS, body, title=label)
+    body = f'<image x="0" y="{TEXT_MID - BADGE_H / 2:.1f}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
+    return _svg(widths[name], ROW_INTRO, body, title=label)
 
 
 def readme_block(base: str) -> str:
     """The README paragraph that stacks the banner and every tile edge to edge."""
     def pct(width: float) -> str:   # truncate so a row never adds up to more than 100%
         return f"{math.floor(width / W * 1e6) / 1e4:g}%"
-    (_, _, _, sw, _), (_, _, _, lw, _), _, (_, _, _, ow, _), _ = rows()
-    link_w = link_widths()
     links = "".join(
         f'<a href="{url}"><img src="assets/link-{name}.svg" alt="{label}" width="{pct(w)}" align="top" /></a>'
-        for (name, url, label), w in zip(LINKS, link_w)
+        for (name, url, label), w in zip(LINKS, link_widths())
     )
+    col = pct(COL_X)
     return (
-        '<p align="center">\n'
+        '<p>\n'
         '  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
         f'  <img src="{base}/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>\n'
-        f'  <img src="{base}/links.svg" alt="" width="{pct(lw)}" align="top" />{links}<br>\n'
-        f'  <img src="{base}/about.svg" alt="{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite." width="100%" align="top" /><br>\n'
-        f'  <a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{pct(W - ow)}" align="top" /></a>'
-        f'<img src="{base}/orca-side.svg" alt="" width="{pct(ow)}" align="top" /><br>\n'
-        f'  <img src="{base}/tail.svg" alt="" width="100%" align="top" />\n'
+        f'  <img src="{base}/intro.svg" alt="{ABOUT}" width="{col}" align="top" />{links}<br>\n'
+        f'  <img src="{base}/stack.svg" alt="Python, TypeScript, Rust, React, Tauri, SQLite" width="{col}" align="top" />'
+        f'<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{pct(COL_W)}" align="top" /></a><br>\n'
+        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" />\n'
         '</p>\n'
     )
