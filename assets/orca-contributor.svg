@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="190" viewBox="0 0 1200 190" role="img" aria-labelledby="title desc">
+  <title id="title">Contributor to Orca</title>
+  <desc id="desc">Contributor to stablyai/orca. More than 135,000 GitHub stars, checked November 24, 2026.</desc>
+  <defs>
+    <linearGradient id="sea" x2="1" y2="1"><stop stop-color="#101725"/><stop offset="1" stop-color="#19152b"/></linearGradient>
+    <linearGradient id="wave"><stop stop-color="#92d8cf" stop-opacity="0"/><stop offset=".5" stop-color="#92d8cf" stop-opacity=".3"/><stop offset="1" stop-color="#b9a0e9" stop-opacity=".05"/></linearGradient>
+    <clipPath id="edge"><rect x="1" y="1" width="1198" height="188" rx="20"/></clipPath>
+  </defs>
+  <g clip-path="url(#edge)">
+    <rect width="1200" height="190" fill="url(#sea)"/>
+    <g fill="none" stroke="url(#wave)">
+      <path d="M-50 145Q160 91 400 145T850 146T1250 82"/>
+      <path d="M-50 158Q160 104 400 158T850 159T1250 95" opacity=".5"/>
+    </g>
+    <g transform="translate(45 47)">
+      <circle cx="48" cy="48" r="47" fill="#8fcfc9" fill-opacity=".045" stroke="#92d8cf" stroke-opacity=".2"/>
+      <path d="M15 56C22 36 38 31 52 37L52 17Q67 26 64 40C71 44 76 50 78 53L88 44L86 62L74 70C57 78 28 79 15 65Q11 61 15 56Z" fill="#d7d8ef"/>
+      <path d="M19 63Q35 49 50 57Q62 61 72 58Q62 73 40 73Q26 72 19 67Z" fill="#111729"/>
+      <ellipse cx="32" cy="49" rx="7" ry="4" transform="rotate(-25 32 49)" fill="#111729"/>
+      <circle cx="20" cy="56" r="1.8" fill="#111729"/>
+    </g>
+    <text x="180" y="48" fill="#91d9ce" font-family="monospace" font-size="14" letter-spacing="3">OPEN WATERS · OPEN SOURCE</text>
+    <text x="178" y="98" fill="#f1ecfa" font-family="Segoe UI,Arial,sans-serif" font-size="35" font-weight="600">Contributor to Orca</text>
+    <text x="180" y="130" fill="#999cb5" font-family="monospace" font-size="18">stablyai/orca</text>
+    <path d="M918 47V139" stroke="#b9a0e9" stroke-opacity=".16"/>
+    <path d="M967 63L970 72L979 75L970 78L967 87L964 78L955 75L964 72Z" fill="#b9a0e9"/>
+    <text x="993" y="92" fill="#e7ddfa" font-family="Segoe UI,Arial,sans-serif" font-size="37" font-weight="300">135k+</text>
+    <text x="994" y="119" fill="#999cb5" font-family="monospace" font-size="14" letter-spacing="2">GITHUB STARS</text>
+    <g fill="#c6b5ea"><path d="M841 27L843 32L848 34L843 36L841 41L839 36L834 34L839 32Z" opacity=".6"/><circle cx="1135" cy="145" r="1.5" opacity=".45"/><circle cx="873" cy="148" r="1" opacity=".4"/></g>
+  </g>
+  <rect x=".5" y=".5" width="1199" height="189" rx="20" fill="none" stroke="#a99bce" stroke-opacity=".18"/>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="44" viewBox="0 0 1200 44" role="img" aria-label="A small constellation above an ocean wave">
+  <defs><linearGradient id="tide"><stop stop-color="#91d9ce" stop-opacity="0"/><stop offset=".5" stop-color="#91d9ce" stop-opacity=".35"/><stop offset="1" stop-color="#b9a0e9" stop-opacity="0"/></linearGradient></defs>
+  <g fill="none" stroke="url(#tide)"><path d="M0 24Q170 4 360 24T720 24T1200 24"/><path d="M0 31Q170 11 360 31T720 31T1200 31" opacity=".4"/></g>
+  <g fill="#b9a0e9"><path d="M600 8L602 16L610 18L602 20L600 28L598 20L590 18L598 16Z"/><circle cx="555" cy="19" r="1.5" opacity=".7"/><circle cx="646" cy="16" r="1.5" opacity=".7"/><circle cx="533" cy="13" r="1" opacity=".4"/><circle cx="670" cy="22" r="1" opacity=".4"/></g>
+</svg>
