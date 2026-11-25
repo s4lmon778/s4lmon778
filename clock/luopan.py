@@ -667,8 +667,7 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
         if name == "clock":
             view = _view(x0, y0, w, h)
             body = (_clock(t, view, highlight=True, guide=False, climber=False) + _bubbles(x0, y0, w, BUBBLE_START)
-                    + _seal(t) + f'<path d="M{DIVIDER_X} 22V{ROW_STRIP - 22}" stroke="#b9a0e9" stroke-opacity=".16"/>'
-                    + _climber())
+                    + _seal(t) + _climber())
             title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)})"
             out[name] = _svg(w, h, body, title=title, style=style)
         elif name == "spark":
@@ -733,7 +732,8 @@ def spacer() -> str:
     return '<svg xmlns="http://www.w3.org/2000/svg" width="520" height="1" viewBox="0 0 520 1"></svg>\n'
 
 
-TOOLBOX_SPACER = "47.5%"   # after the label on a right-aligned line: puts ▶ Full toolbox at the right column (tuned for ~1000–1080 px READMEs)
+RIGHT_COLUMN = "52%"       # beside the floated clock: GitHub pads floated images 20 px, so leave room
+TOOLBOX_SPACER = "45.6%"   # after the label on a right-aligned line: puts ▶ Full toolbox at the right column (tuned for ~1000–1080 px READMEs)
 
 
 def readme_block(base: str) -> str:
@@ -749,7 +749,7 @@ def readme_block(base: str) -> str:
         f'<a href="{url}"><img src="assets/link-{name}.svg" alt="{label}" width="{pct(w)}" align="top" /></a>'
         for (name, url, label), w in zip(LINKS, link_widths())
     )
-    right = pct(COL_W)
+    right = RIGHT_COLUMN
     toolbox_rows = "<br>\n".join(
         f'<img src="assets/{name}" alt="{escape(unescape(svg.split("<title>", 1)[1].split("</title>", 1)[0]))}" width="100%" align="top" />'
         for name, svg in toolbox_tiles()
