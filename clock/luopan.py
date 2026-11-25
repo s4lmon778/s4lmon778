@@ -642,6 +642,7 @@ def _view(x0: float, y0: float, w: float, h: float):
 CLOCK_H = round(CENTER[1] + OUTER * SCALE + 8)     # down to the bottom of the clock's circle
 WIDE_W = round(CENTER[0] + OUTER * SCALE + 8)      # the same clock cropped to its rings, shown full width when the column wraps
 CLIMBER = False            # the stick figure is switched off for now; its code stays below
+BUBBLES = False            # the rising bubbles are switched off; their code stays below
 # Window widths where GitHub's README is too narrow for the right column beside the clock
 # (measured on the live profile): the one-column layout under ~750 px, and the sidebar
 # layout from 768 px until ~1100 px. There the README shows the clock full width instead.
@@ -669,12 +670,12 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     """Every live tile for one moment, keyed by file stem."""
     if CLIMBER:
         _check_climb()
-    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE) + (_climber_css(t) if CLIMBER else "")
+    style = _keyframes(t) + (_bubble_css(t, BUBBLE_RISE) if BUBBLES else "") + (_climber_css(t) if CLIMBER else "")
     out = {}
     for name, x0, y0, w, h in rows():
         if name in ("clock", "clock-wide"):
             view = _view(x0, y0, w, h)
-            body = (_clock(t, view, highlight=True, guide=False, climber=False) + _bubbles(x0, y0, w, BUBBLE_START)
+            body = (_clock(t, view, highlight=True, guide=False, climber=False) + (_bubbles(x0, y0, w, BUBBLE_START) if BUBBLES else "")
                     + _seal(t) + (_climber() if CLIMBER else ""))
             title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)})"
             out[name] = _svg(w, h, body, title=title, style=style)
