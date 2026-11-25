@@ -1,7 +1,7 @@
 """Draw the live clock tiles that sit under the banner.
 
     python clock/build_canvas.py OUTDIR      # live tiles: strip, intro, stack, tail, floor
-    python clock/build_canvas.py --static    # the linked badge tiles in assets/ (no clock reaches them)
+    python clock/build_canvas.py --static    # the right-column tiles in assets/ (no clock reaches them)
 
 Activity comes from the anonymous public contribution calendar (the same view any
 visitor sees), so private activity never appears. If the request fails, the last
@@ -51,7 +51,8 @@ def main() -> None:
     if sys.argv[1:] == ["--static"]:
         for name, _, _ in luopan.LINKS:
             write(luopan.ASSETS / f"link-{name}.svg", luopan.link_tile(name))
-        print("wrote linked badge tiles")
+        write(luopan.ASSETS / "about.svg", luopan.about_tile())
+        print("wrote linked badge tiles and the about tile")
         return
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "canvas")
     t = luopan.now()

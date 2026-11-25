@@ -41,8 +41,8 @@ SPARK = (652, 31, 540, 78)  # x, y, width, height inside the strip (clock untouc
 # Below the strip the page keeps the strip's two columns: text over the rings on the
 # left, and links + the Orca card on the right, lined up with the sparkline's edges.
 COL_X, COL_W = SPARK[0], SPARK[2]
-BADGE_H = 30                # badges sized to sit with the clock's labels
-BADGE_GAP = 8
+BADGE_H = 26                # all six language badges fit on one row of the right column at this size
+BADGE_GAP = 6
 ABOUT_SIZE = 20             # description text, close to the clock's label size
 LINKS = [("linkedin", "https://www.linkedin.com/in/chen778", "LinkedIn"),
          ("handshake", "https://ucsd.joinhandshake.com/profiles/uwu7a3", "Handshake")]
@@ -53,9 +53,9 @@ ORCA_ASPECT = 1200 / 190
 # Every row is at least ~82 units tall: on a phone that is still taller than one
 # 24 px text line, which is what keeps the stacked images from opening gaps.
 ROW_STRIP = 132
-ROW_INTRO = COL_W / ORCA_ASPECT   # description beside the Orca card
-ROW_STACK = 84                    # language badges beside the LinkedIn / Handshake badges
-ROW_TAIL = 90
+ROW_INTRO = COL_W / ORCA_ASPECT   # the Orca card
+ROW_STACK = 84                    # description and language badges, under the card
+ROW_TAIL = 84                     # LinkedIn and Handshake, under those
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
@@ -307,7 +307,7 @@ def _bubbles(x0: float, y0: float, w: float, start_y: float) -> str:
 # carries it up out of the solid floor and back down.
 
 FLOOR_FADE = '<linearGradient id="fl-fade" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/>' \
-             '<stop offset=".38" stop-color="#fff" stop-opacity=".3"/><stop offset=".74" stop-color="#fff"/></linearGradient>'
+             '<stop offset=".28" stop-color="#fff" stop-opacity=".3"/><stop offset=".52" stop-color="#fff"/></linearGradient>'
 
 
 def _floor(w: float, h: float) -> str:
@@ -339,43 +339,12 @@ def _floor(w: float, h: float) -> str:
     )
 
 
-# Three pixel-art cane toads, side view, facing right: hunched warty back, a heavy brow
-# over a round gold eye, the big gland behind it, a pale belly and orange-tipped toes.
-# o outline · d dark · b body · l light · w wart · c belly · y eye · k pupil · r toes
-TOAD_SIT = [
-    "..........oooo............",
-    ".......ooollllooo...ooo...",
-    ".....oolbbwbbbbldo.oddo...",
-    "....olbbbbbbwbbbbdoyykyo..",
-    "...olbwbbbbbbbllldoyyyyoo.",
-    "..obbbbbbwbbblllldddddbbbo",
-    "..obwbbbbbbbbbllbbbbbbbbbo",
-    ".obbbbwbbbbwbbbbbbbbbbbboo",
-    ".obbbbbbbbbbbbbooooooooo..",
-    "odbbwbbbbbbcccccccccco....",
-    "odddbbbbbbccccccccccdo....",
-    "odwddbbbdcccccccccddddo...",
-    "odddddddoccccccccoodddo...",
-    "oddddddo.ooooooooo.oddo...",
-    ".oorrdo............ordo...",
-    "..oorrro..........orrrro..",
-]
-TOAD_LEAP = ["......" + r for r in TOAD_SIT[:11]] + [
-    "....oodwdddbbbcccccccccccddo",
-    "..ooddddooooooooooooooo.oddo",
-    "oodddoo..................ordo",
-    "orrro.....................orrro",
-    "oo..........................oo",
-]
-TOAD_PIXEL = 1.7      # canvas units per sprite pixel
-TOADS = [  # name, palette, seed
-    ("brown", {"o": "#2a1f17", "d": "#5a4330", "b": "#7d5f43", "l": "#a08463", "w": "#4e3a2a",
-               "c": "#cdb38c", "y": "#d8b54a", "k": "#111729", "r": "#c9774e"}, 11),
-    ("green", {"o": "#172116", "d": "#2e4427", "b": "#4a6a3d", "l": "#6f8d58", "w": "#2b3f25",
-               "c": "#b8c290", "y": "#d6c04a", "k": "#111729", "r": "#c08350"}, 23),
-    ("yellow", {"o": "#2a2410", "d": "#6a5820", "b": "#9c832e", "l": "#c2a64e", "w": "#74611f",
-                "c": "#e3d39c", "y": "#f0dc78", "k": "#111729", "r": "#c98a4e"}, 37),
-]
+# Three chunky pixel-art toads, side view, facing right: round bodies, big glossy eyes,
+# lighter bellies. The sprites are built in layers from shapes in toad_sprites.py.
+from toad_sprites import PALETTES as TOAD_PALETTES, SPOTS as TOAD_SPOTS, build as _toad_rows  # noqa: E402
+
+TOAD_PIXEL = 1.6      # canvas units per sprite pixel
+TOADS = [("olive", 11), ("brown", 23), ("rust", 37)]  # name, seed for its hopping habits
 
 
 def _sprite(rows: list[str], pal: dict[str, str]) -> str:
@@ -397,8 +366,9 @@ def _sprite(rows: list[str], pal: dict[str, str]) -> str:
     return f'<g shape-rendering="crispEdges">{"".join(out)}</g>'
 
 
-def _toad_art(pal: dict[str, str]) -> tuple[str, str]:
-    return _sprite(TOAD_SIT, pal), _sprite(TOAD_LEAP, pal)
+def _toad_art(name: str) -> tuple[str, str]:
+    pal, spots = TOAD_PALETTES[name], TOAD_SPOTS[name]
+    return _sprite(_toad_rows("sit", spots), pal), _sprite(_toad_rows("leap", spots), pal)
 
 
 def _toad_track(seed: int, left: float, right: float):
@@ -432,7 +402,7 @@ def _toads(t: datetime, w: float, ground: float) -> tuple[str, str]:
     left, right = 50.0, w - 50.0
     ease = {"up": "cubic-bezier(.2,.62,.42,1)", "down": "cubic-bezier(.58,0,.8,.38)", "rest": "linear"}
     css, markup = [], []
-    for name, pal, seed in TOADS:
+    for name, seed in TOADS:
         # each toad turns round at its own spots, so they never pile up at the ends
         period, xs, ys, face, pose, phase = _toad_track(seed, left + (seed % 5) * 14, right - (seed % 7) * 11)
         pct = lambda s: f"{s / period * 100:.4f}%"
@@ -450,7 +420,7 @@ def _toads(t: datetime, w: float, ground: float) -> tuple[str, str]:
             f".{k}-f{{transform-box:view-box;transform-origin:0 0;animation:{k}-f step-end {common}}}"
             f".{k}-l{{animation:{k}-l step-end {common}}}.{k}-s{{animation:{k}-s step-end {common}}}"
         )
-        sit, leap = _toad_art(pal)
+        sit, leap = _toad_art(name)
         rest_x = left + (right - left) * (seed % 7) / 7      # where it sits if motion is turned off
         markup.append(
             f'<g transform="translate(0 {ground})"><g class="{k}-x" style="transform:translateX({rest_x:.1f}px)">'
@@ -540,12 +510,13 @@ Y_INTRO = ROW_STRIP
 Y_STACK = Y_INTRO + ROW_INTRO
 Y_TAIL = Y_STACK + ROW_STACK
 Y_FLOOR = Y_TAIL + ROW_TAIL
-ROW_FLOOR = 150
-TOAD_GROUND = ROW_FLOOR - 20      # the toads sit in the solid lower part of the floor
+ROW_FLOOR = 172
+TOAD_GROUND = ROW_FLOOR - 14      # the toads sit in the solid lower part of the floor
 BUBBLE_START = Y_FLOOR + ROW_FLOOR - 18   # bubbles leave from the bottom of the floor...
 BUBBLE_RISE = BUBBLE_START + 12           # ...and rise until the banner covers them
-TEXT_MID = ROW_INTRO / 2    # the description is centred on the Orca card beside it
-BADGE_Y = 6                 # language badges and link badges share this top line in the stack row
+ABOUT_BASELINE = 30         # description text in the about tile
+LANGS_Y = 44                # language badges under it
+LINKS_Y = 8                 # link badges near the top of the last row, just under the language badges
 
 
 def rows() -> list[tuple[str, float, float, float, float]]:
@@ -577,13 +548,8 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
             title = (f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)}), "
                      f"beside {sum(d['count'] for d in days)} public contributions over {len(days)} days")
             out[name] = _svg(w, h, body, title=title, style=style)
-        elif name == "intro":
-            text = (f'<text class="lp-txt" x="0" y="{TEXT_MID + ABOUT_SIZE * .36:.1f}" font-size="{ABOUT_SIZE}" '
-                    f'font-family="{UI_FONT}">{escape(ABOUT)}</text>')
-            out[name] = _svg(w, h, rings + bubbles + text, title=ABOUT, style=style)
-        elif name == "stack":
-            out[name] = _svg(w, h, rings + bubbles + _badge_row(LANGS, 0, BADGE_Y),
-                             title="Python, TypeScript, Rust, React, Tauri, SQLite", style=style)
+        elif name in ("intro", "stack"):
+            out[name] = _svg(w, h, rings + bubbles, title="", style=style)
         elif name == "tail":
             out[name] = _svg(w, h, rings + bubbles, title="", style=style)
         else:
@@ -601,8 +567,15 @@ def link_tile(name: str) -> str:
     widths = dict(zip([n for n, _, _ in LINKS], link_widths()))
     label = {n: l for n, _, l in LINKS}[name]
     bw, uri = _badge(name)
-    body = f'<image x="0" y="{BADGE_Y}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
-    return _svg(widths[name], ROW_STACK, body, title=label)
+    body = f'<image x="0" y="{LINKS_Y}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
+    return _svg(widths[name], ROW_TAIL, body, title=label)
+
+
+def about_tile() -> str:
+    """Static right-column tile under the Orca card: the description and the language badges."""
+    body = (f'<text class="lp-txt" x="0" y="{ABOUT_BASELINE}" font-size="{ABOUT_SIZE}" font-family="{UI_FONT}">{escape(ABOUT)}</text>'
+            + _badge_row(LANGS, 0, LANGS_Y))
+    return _svg(COL_W, ROW_STACK, body, title=ABOUT + " Python, TypeScript, Rust, React, Tauri, SQLite.")
 
 
 def readme_block(base: str) -> str:
@@ -618,10 +591,11 @@ def readme_block(base: str) -> str:
         '<p>\n'
         '  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
         f'  <img src="{base}/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>\n'
-        f'  <img src="{base}/intro.svg" alt="{ABOUT}" width="{col}" align="top" />'
+        f'  <img src="{base}/intro.svg" alt="" width="{col}" align="top" />'
         f'<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{pct(COL_W)}" align="top" /></a><br>\n'
-        f'  <img src="{base}/stack.svg" alt="Python, TypeScript, Rust, React, Tauri, SQLite" width="{col}" align="top" />{links}<br>\n'
-        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" /><br>\n'
+        f'  <img src="{base}/stack.svg" alt="" width="{col}" align="top" />'
+        f'<img src="assets/about.svg" alt="{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite." width="{pct(COL_W)}" align="top" /><br>\n'
+        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" />{links}<br>\n'
         f'  <img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
         '</p>\n'
     )
