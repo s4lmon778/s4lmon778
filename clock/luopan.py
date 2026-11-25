@@ -46,7 +46,7 @@ BADGE_GAP = 6
 ABOUT_SIZE = 20             # description text, close to the clock's label size
 LINKS = [("linkedin", "https://www.linkedin.com/in/chen778", "LinkedIn"),
          ("handshake", "https://ucsd.joinhandshake.com/profiles/uwu7a3", "Handshake")]
-LANGS = ["python", "typescript", "rust", "react", "tauri", "sqlite"]
+COMPANIONS = "EDITORS & AI COMPANIONS"   # the toolbox category shown under the description
 ABOUT = "Desktop tools, web interfaces, and data experiments."
 ORCA_ASPECT = 1200 / 190
 
@@ -620,15 +620,6 @@ def _badge(name: str) -> tuple[float, str]:
     return w, "data:image/svg+xml;base64," + base64.b64encode(src.encode()).decode()
 
 
-def _badge_row(names: list[str], x: float, y: float) -> str:
-    out = []
-    for name in names:
-        w, uri = _badge(name)
-        out.append(f'<image x="{x:.1f}" y="{y}" width="{w:.1f}" height="{BADGE_H}" href="{uri}"/>')
-        x += w + BADGE_GAP
-    return "".join(out)
-
-
 def link_widths() -> list[float]:
     """Widths of the linked badge tiles (each badge plus the gap after it, except the last)."""
     widths = [_badge(name)[0] for name, _, _ in LINKS]
@@ -668,7 +659,7 @@ TOAD_GROUND = ROW_FLOOR - 14      # the toads sit in the solid lower part of the
 BUBBLE_START = CLOCK_H - 10                # bubbles rise from the foot of the clock...
 BUBBLE_RISE = BUBBLE_START + 12            # ...until the banner covers them
 ABOUT_BASELINE = 30         # description text in the about tile
-LANGS_Y = 44                # language badges under it
+LANGS_Y = 44                # editor & AI badges under it
 LINKS_Y = 8                 # link badges near the top of their row
 
 
@@ -727,11 +718,33 @@ def link_tile(name: str) -> str:
     return _svg(widths[name], ROW_LINKS, body, title=label)
 
 
+def _companions() -> list[str]:
+    import toolbox
+    return next([n for n, _ in tools] for cat, tools in toolbox.CATALOG if cat == COMPANIONS)
+
+
 def about_tile() -> str:
-    """Static right-column tile under the Orca card: the description and the language badges."""
+    """Static right-column tile under the Orca card: the description and the editor & AI badges
+    (the toolbox's own badges), scaled down together if the row is wider than the column."""
+    import toolbox
+    badges = []
+    for name in _companions():
+        src = toolbox.file_for(name).read_text(encoding="utf-8")
+        badges.append((float(src.split('width="', 1)[1].split('"', 1)[0]) * BADGE_H / 20,
+                       "data:image/svg+xml;base64," + base64.b64encode(src.encode()).decode()))
+    total = sum(w for w, _ in badges) + BADGE_GAP * (len(badges) - 1)
+    k = min(1.0, COL_W / total)
+    x, row = 0.0, []
+    for w, uri in badges:
+        row.append(f'<image x="{x:.1f}" y="{LANGS_Y}" width="{w * k:.1f}" height="{BADGE_H * k:.1f}" href="{uri}"/>')
+        x += (w + BADGE_GAP) * k
     body = (f'<text class="lp-txt" x="0" y="{ABOUT_BASELINE}" font-size="{ABOUT_SIZE}" font-family="{UI_FONT}">{escape(ABOUT)}</text>'
-            + _badge_row(LANGS, 0, LANGS_Y))
-    return _svg(COL_W, ROW_STACK, body, title=ABOUT + " Python, TypeScript, Rust, React, Tauri, SQLite.")
+            + "".join(row))
+    return _svg(COL_W, ROW_STACK, body, title=_about_alt())
+
+
+def _about_alt() -> str:
+    return f"{ABOUT} {', '.join(_companions())}."
 
 
 def toolbox_tiles() -> list[tuple[str, str]]:
@@ -823,15 +836,18 @@ def readme_block(base: str) -> str:
         + column(f"{base}/{live}/spark.svg", "90 days of public GitHub activity", right, "100%") + '<br>\n'
         + '<a href="https://github.com/stablyai/orca">'
         + column(_v("assets/orca-contributor.svg"), "Contributor to Orca · 135k+ GitHub stars", right, "100%") + '</a><br>\n'
-        + column(_v("assets/about.svg"), f"{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite.", right, "100%") + '<br>\n'
+        + column(_v("assets/about.svg"), _about_alt(), right, "100%") + '<br>\n'
         f'{links}<br>\n'
         f'<img src="{_v("assets/spacer.svg")}" alt="" width="100%" />\n'
         '<details>\n'
         '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
         '</details>\n'
-        # GitHub's <picture> follows its own light/dark theme setting, so the light page gets a light floor
-        f'<picture><source media="(prefers-color-scheme: light)" srcset="{base}/{live}/floor-light.svg">'
+        # GitHub matches <picture> theme sources to the viewer's GitHub theme (or their system theme
+        # when logged out), so each viewer gets the floor that fits their page. Both sources are
+        # listed so the choice never falls back to the dark default on a light page.
+        f'<picture><source media="(prefers-color-scheme: dark)" srcset="{base}/{live}/floor.svg">'
+        f'<source media="(prefers-color-scheme: light)" srcset="{base}/{live}/floor-light.svg">'
         f'<img src="{base}/{live}/floor.svg" alt="" width="100%" align="top" /></picture>\n'
         '</div>\n'
     )

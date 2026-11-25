@@ -4,7 +4,7 @@
 
 Badges come from Shields in the same style as the language badges. Tools whose brand
 isn't in the Simple Icons set get a small generic icon drawn here instead of an
-imitation of someone's logo; Orca uses the orca from the contributor card.
+imitation of someone's logo.
 """
 from __future__ import annotations
 
@@ -43,9 +43,6 @@ GLYPHS = {
     "spark": '<path d="M12 2l2.3 6.4L21 11l-6.7 2.6L12 20l-2.3-6.4L3 11l6.7-2.6z" fill="{c}"/>',
     "chat": '<path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="none" stroke="{c}" stroke-width="2" stroke-linejoin="round"/>'
             '<circle cx="8" cy="11" r="1.3" fill="{c}"/><circle cx="12" cy="11" r="1.3" fill="{c}"/><circle cx="16" cy="11" r="1.3" fill="{c}"/>',
-    "orca": '<path d="M2 14c2-6 7-8 11-6V3c3 2 4 5 3 8 2 1 3.4 2.4 4 3.4l3-2.4-.6 5.4-3.6 2.3C14 22 6 22.3 2 18.4 1 17.4 1.2 15.3 2 14z" fill="{c}"/>'
-            '<path d="M4 17.5c3-3 7-2.4 10-1.6 2 .6 4 .3 5.4-.4-2.4 4-8 4.4-12.4 3.4-1.5-.3-2.5-.8-3-1.4z" fill="#171c29"/>'
-            '<ellipse cx="7.6" cy="13.6" rx="2" ry="1.1" transform="rotate(-25 7.6 13.6)" fill="#171c29"/>',
 }
 
 # (category, [(name, simple-icons slug or "glyph:<name>")])
@@ -70,8 +67,8 @@ CATALOG = [
         ("ESLint", "eslint"), ("Prettier", "prettier"), ("Oxlint", "oxc"), ("CodeQL", "glyph:search"),
         ("Dependabot", "dependabot")]),
     ("EDITORS & AI COMPANIONS", [
-        ("Orca", "glyph:orca"), ("VS Code", "glyph:brackets"), ("Codex", "glyph:spark"), ("Claude Code", "claude"),
-        ("ChatGPT", "glyph:chat"), ("DeepSeek", "deepseek")]),
+        ("VS Code", "glyph:brackets"), ("Codex", "glyph:spark"), ("Claude Code", "claude"),
+        ("ChatGPT", "glyph:chat"), ("DeepSeek", "deepseek"), ("Muse Spark", "meta")]),
 ]
 
 
