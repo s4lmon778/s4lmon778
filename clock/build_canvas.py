@@ -52,6 +52,9 @@ def main() -> None:
         for name, _, _ in luopan.LINKS:
             write(luopan.ASSETS / f"link-{name}.svg", luopan.link_tile(name))
         write(luopan.ASSETS / "about.svg", luopan.about_tile())
+        write(luopan.ASSETS / "spacer.svg", luopan.spacer())
+        for name, svg in luopan.toolbox_tiles():
+            write(luopan.ASSETS / name, svg)
         print("wrote linked badge tiles and the about tile")
         return
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "canvas")

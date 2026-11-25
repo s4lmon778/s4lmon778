@@ -20,7 +20,7 @@ from __future__ import annotations
 import base64
 import math
 from datetime import datetime
-from html import escape
+from html import escape, unescape
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -33,10 +33,10 @@ MONO = "ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace"
 # ------------------------------------------------------------------ layout
 # Canvas units: the README content width is 1200. y = 0 is the bottom edge of the banner.
 W = 1200
-CENTER = (-34, 66)          # clock centre: just past the left edge, about where the README box edge sits
-SCALE = 1.12
-DIVIDER_X = 620             # the bright row ends before this line; the sparkline gets everything to its right
-SPARK = (652, 31, 540, 78)  # x, y, width, height inside the strip (clock untouched; strip stays 132 tall)
+CENTER = (-22, 66)          # clock centre: just past the left edge, about where the README box edge sits
+SCALE = 0.896               # 20% smaller than the first version (1.12); everything tied to the clock follows it
+DIVIDER_X = 512             # the bright row ends before this line; the sparkline gets everything to its right
+SPARK = (540, 31, 652, 78)  # x, y, width, height inside the strip
 
 # Below the strip the page keeps the strip's two columns: text over the rings on the
 # left, and links + the Orca card on the right, lined up with the sparkline's edges.
@@ -55,7 +55,7 @@ ORCA_ASPECT = 1200 / 190
 ROW_STRIP = 132
 ROW_INTRO = COL_W / ORCA_ASPECT   # the Orca card
 ROW_STACK = 84                    # description and language badges, under the card
-ROW_TAIL = 84                     # LinkedIn and Handshake, under those
+ROW_LINKS = 84                    # LinkedIn and Handshake tiles; tall enough to stay gap-free on phones
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
@@ -193,7 +193,7 @@ def _keyframes(t: datetime) -> str:
     return "".join(css)
 
 
-def _clock(t: datetime, view, *, highlight: bool, guide: bool) -> str:
+def _clock(t: datetime, view, *, highlight: bool, guide: bool, climber: bool = True) -> str:
     cx, cy, s = view[:3]
     parts = []
     rings = _ring_markup(t, view)
@@ -201,6 +201,8 @@ def _clock(t: datetime, view, *, highlight: bool, guide: bool) -> str:
         parts.append(f'<g class="lp-dim">{rings}</g>')
     if highlight:
         parts.append(f'<g class="lp-lit" clip-path="url(#lp-slit)">{_ring_markup(t, view, only_current=True)}</g>')
+    if climber:
+        parts.append(_climber())
     if not parts:
         return ""
     return (f'<g transform="translate({cx:.2f} {cy:.2f}) scale({s})" font-size="{FONT}" '
@@ -214,7 +216,7 @@ SLIT = f'<clipPath id="lp-slit"><rect x="0" y="{-FONT * 0.66:.2f}" width="{OUTER
 # A real 罗盘 also reads the season and the double-hour. They sit in a small seal at the
 # compass hub, just left of the bright row, so the six wallpaper rings stay as they are.
 
-SEAL = (5, 41, 49, 50)      # x, y, width, height inside the strip (ends just before the bright row)
+SEAL = (6, 46, 39, 40)      # x, y, width, height inside the strip (ends just before the bright row)
 SOLAR_TERMS = [  # name, C for the 21st-century day formula  [Y·0.2422 + C] − L
     ("小寒", 5.4055), ("大寒", 20.12), ("立春", 3.87), ("雨水", 18.73), ("惊蛰", 5.63), ("春分", 20.646),
     ("清明", 4.81), ("谷雨", 20.1), ("立夏", 5.52), ("小满", 21.04), ("芒种", 5.678), ("夏至", 21.37),
@@ -247,7 +249,7 @@ def _seal(t: datetime) -> str:
     return (
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="#b9a0e9" fill-opacity=".06" '
         f'stroke="#b9a0e9" stroke-opacity=".5"/>'
-        f'<g class="lp-lit" font-size="19.5" font-family="{FONT_FAMILY}" text-anchor="middle" dominant-baseline="central">'
+        f'<g class="lp-lit" font-size="15.6" font-family="{FONT_FAMILY}" text-anchor="middle" dominant-baseline="central">'
         f'<text x="{mid}" y="{y + h * .28:.1f}">{solar_term(t)}</text>'
         f'<text x="{mid}" y="{y + h * .74:.1f}">{shichen(t)}</text></g>'
     )
@@ -262,7 +264,7 @@ def _bubble_set() -> list[tuple[float, float, float, float, float, float]]:
     from random import Random
     rng = Random(778)
     out = []
-    for x in (64, 132, 214, 287, 371, 446, 529, 588):
+    for x in (48, 104, 166, 226, 290, 348, 410, 466):   # spread under the (smaller) clock
         out.append((x + rng.uniform(-14, 14), rng.uniform(1.7, 3.9), rng.uniform(17, 29),
                     rng.uniform(3, 7), rng.uniform(2.6, 4.4), rng.uniform(0, 60)))
     return out  # x, radius, rise seconds, sway, sway seconds, phase
@@ -431,6 +433,125 @@ def _toads(t: datetime, w: float, ground: float) -> tuple[str, str]:
     return "".join(markup), "".join(css)
 
 
+# ------------------------------------------------------------------ the climber
+# A small stick figure lives on the clock's outer ring. It runs along it, leaps down to
+# the minute or hour ring and back, and now and then hangs off the edge, swinging. It is
+# drawn in clock units inside every clock tile, from the same timeline, so it passes from
+# one tile to the next without a jump.
+
+FIG_STROKE = "#f1ecfa"
+FIG_SCALE = 1.45           # poses are drawn ~28 units tall; this makes the figure readable at README size
+R_SECONDS = SPACING * 6 + 5 + FONT * 4      # outer edge of the seconds labels
+R_MINUTES = SPACING * 5 + 5 + FONT * 4      # outer edge of the minute labels
+R_HOURS = SPACING * 4 + 5 + FONT * 4        # outer edge of the hour labels
+
+
+def _limbs(*segs) -> str:
+    """Each segment is a polyline: x0, y0, x1, y1[, x2, y2]."""
+    return "".join('<path d="M' + " L".join(f"{s[i]} {s[i + 1]}" for i in range(0, len(s), 2)) + '"/>' for s in segs)
+
+
+def _poses() -> tuple[str, str, str, str]:
+    """Stick-figure poses with the feet at (0, 0), facing +x, head up (-y)."""
+    head = lambda x, y: f'<circle cx="{x}" cy="{y}" r="3.6" fill="{FIG_STROKE}" stroke="none"/>'
+    run_a = head(2, -22) + _limbs((1.5, -18, 0, -9), (1, -15, 6, -12, 8, -15), (1, -15, -4, -12, -6, -8),
+                                  (0, -9, 5, -5, 4, 0), (0, -9, -3, -5, -8, -3))
+    run_b = head(2, -22) + _limbs((1.5, -18, 0, -9), (1, -15, -4, -12, -6, -15), (1, -15, 5, -11, 7, -8),
+                                  (0, -9, -2, -4, -1, 0), (0, -9, 4, -6, 8, -5))
+    jump = head(1, -23) + _limbs((1, -19, 0, -10), (1, -16, -5, -21), (1, -16, 6, -21),
+                                 (0, -10, 5, -7, 2, -2), (0, -10, -3, -6, -6, -3))
+    # hanging: hands on the ring at (0, 0), body dangling along +y
+    hang = head(0, 7.5) + _limbs((-3, 0, -1.5, 5), (3, 0, 1.5, 5), (0, 11, 0, 20), (-1.5, 5, 0, 11), (1.5, 5, 0, 11),
+                                 (0, 20, -2.5, 28), (0, 20, 2.5, 28))
+    return run_a, run_b, jump, hang
+
+
+# (seconds, angle°, radius, pose, facing) waypoints; angles grow clockwise (downward on the right).
+# The route stays in the upper part of the clock: clear of the right column (whose tiles
+# don't draw the clock) and above the toolbox line, so the figure is never cut off.
+CLIMB = [
+    (0.0, 14, R_SECONDS, "run", 1), (4.0, 30, R_SECONDS, "jump", 1),
+    (4.7, 34, R_MINUTES, "run", -1), (9.2, 14, R_MINUTES, "jump", -1),
+    (9.9, 20, R_SECONDS, "hang", 1), (13.4, 20, R_SECONDS, "jump", 1),
+    (13.8, 22, R_SECONDS, "run", 1), (16.0, 32, R_SECONDS, "jump", 1),
+    (16.8, 30, R_HOURS, "run", 1), (19.3, 46, R_HOURS, "run", -1),
+    (23.3, 18, R_HOURS, "jump", -1), (24.1, 16, R_MINUTES, "run", 1),
+    (27.1, 36, R_MINUTES, "jump", -1), (27.8, 30, R_SECONDS, "run", -1),
+    (31.0, 14, R_SECONDS, "run", 1),
+]
+CLIMB_PERIOD = 31.0
+HANG_ANGLE = next(a for _, a, _, pose, _ in CLIMB if pose == "hang")   # every hang happens at this angle
+LEAP_ARC = 24              # how far a leap bows outward at its top, in clock units
+
+
+def _check_climb() -> None:
+    """Fail the build if any pose, at any point of the route, would cross a tile edge it can't cross."""
+    tall = 28 * FIG_SCALE                  # standing figure, feet to head, along the radius
+    right_edge = COL_X - 6                 # the right column's tiles don't draw the clock
+    bottom = Y_TAIL + ROW_TAIL - 4         # the toolbox line sits below this
+    for (s0, a0, r0, pose, _), (s1, a1, r1, _, _) in zip(CLIMB, CLIMB[1:]):
+        for k in range(21):
+            f = k / 20
+            ang = math.radians(a0 + (a1 - a0) * f)
+            rad = r0 + (r1 - r0) * f + (LEAP_ARC * math.sin(math.pi * f) if pose == "jump" else 0)
+            reach = rad + (0 if pose == "hang" else tall)
+            x = CENTER[0] + reach * SCALE * math.cos(ang) + 8
+            y = CENTER[1] + reach * SCALE * math.sin(ang) + (30 * FIG_SCALE * SCALE if pose == "hang" else 6)
+            assert x < right_edge, f"climber reaches x={x:.0f} at {s0}s (column starts at {COL_X})"
+            assert y < bottom, f"climber reaches y={y:.0f} at {s0}s (toolbox line at {bottom + 4:.0f})"
+
+
+def _climber_css(t: datetime) -> str:
+    period = CLIMB_PERIOD
+    pct = lambda s: f"{s / period * 100:.4f}%"
+    ang, rad, face, run, jmp, hng = [], [], [], [], [], []
+    for i, (s, a, r, pose, f) in enumerate(CLIMB):
+        ang.append(f"{pct(s)}{{transform:rotate({a}deg)}}")
+        rad.append(f"{pct(s)}{{transform:translateX({r}px)}}")
+        if pose == "jump" and i + 1 < len(CLIMB):            # an arc: pushed out at the top of the leap
+            mid = (s + CLIMB[i + 1][0]) / 2
+            rad.append(f"{pct(mid)}{{transform:translateX({max(r, CLIMB[i + 1][2]) + LEAP_ARC}px)}}")
+        face.append(f"{pct(s)}{{transform:scaleX({f})}}")
+        run.append(f"{pct(s)}{{opacity:{1 if pose == 'run' else 0}}}")
+        jmp.append(f"{pct(s)}{{opacity:{1 if pose == 'jump' else 0}}}")
+        hng.append(f"{pct(s)}{{opacity:{1 if pose == 'hang' else 0}}}")
+    end = CLIMB[0]
+    ang.append(f"100%{{transform:rotate({end[1]}deg)}}")
+    rad.append(f"100%{{transform:translateX({end[2]}px)}}")
+    common = f"{period}s infinite;animation-delay:-{t.timestamp() % period:.3f}s"
+    return (
+        f"@keyframes fg-a{{{''.join(ang)}}}@keyframes fg-r{{{''.join(rad)}}}@keyframes fg-f{{{''.join(face)}}}"
+        f"@keyframes fg-run{{{''.join(run)}100%{{opacity:1}}}}@keyframes fg-jmp{{{''.join(jmp)}100%{{opacity:0}}}}"
+        f"@keyframes fg-hng{{{''.join(hng)}100%{{opacity:0}}}}"
+        "@keyframes fg-step{0%,49.9%{opacity:1}50%,100%{opacity:0}}@keyframes fg-step2{0%,49.9%{opacity:0}50%,100%{opacity:1}}"
+        "@keyframes fg-swing{from{transform:rotate(-16deg)}to{transform:rotate(16deg)}}"
+        f".fg-a{{transform-box:view-box;transform-origin:0 0;animation:fg-a ease-in-out {common}}}"
+        f".fg-r{{animation:fg-r ease-in-out {common}}}"
+        f".fg-f{{transform-box:view-box;transform-origin:0 0;animation:fg-f step-end {common}}}"
+        f".fg-run{{animation:fg-run step-end {common}}}.fg-jmp{{animation:fg-jmp step-end {common}}}"
+        f".fg-hng{{animation:fg-hng step-end {common}}}"
+        ".fg-ra{animation:fg-step .32s infinite}.fg-rb{animation:fg-step2 .32s infinite}"
+        ".fg-sw{transform-box:view-box;transform-origin:0 0;animation:fg-swing 1.3s ease-in-out infinite alternate}"
+        "@media (prefers-reduced-motion:reduce){.fg-a,.fg-r,.fg-f,.fg-run,.fg-jmp,.fg-hng,.fg-ra,.fg-rb,.fg-sw{animation:none}"
+        ".fg-jmp,.fg-hng,.fg-rb{opacity:0}}"
+    )
+
+
+def _climber() -> str:
+    run_a, run_b, jump, hang = _poses()
+    a0, r0 = CLIMB[0][1], CLIMB[0][2]
+    stroke = f'fill="none" stroke="{FIG_STROKE}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"'
+    return (
+        f'<g class="fg-a" style="transform:rotate({a0}deg)"><g class="fg-r" style="transform:translateX({r0}px)">'
+        f'<g transform="rotate(90) scale({FIG_SCALE})"><g class="fg-f" {stroke}>'
+        f'<g class="fg-run"><g class="fg-ra">{run_a}</g><g class="fg-rb" opacity="0">{run_b}</g></g>'
+        f'<g class="fg-jmp" opacity="0">{jump}</g></g></g>'
+        # hangs straight down the screen: cancel the ring angle it hangs at
+        f'<g transform="rotate({-HANG_ANGLE}) scale({FIG_SCALE})"><g class="fg-hng" opacity="0" {stroke}><g class="fg-sw">{hang}</g></g></g>'
+        "</g></g>"
+    )
+
+
 # ------------------------------------------------------------------ sparkline
 
 def _smooth(points: list[tuple[float, float]], floor: float) -> str:
@@ -509,11 +630,14 @@ def _view(x0: float, y0: float, w: float, h: float):
 Y_INTRO = ROW_STRIP
 Y_STACK = Y_INTRO + ROW_INTRO
 Y_TAIL = Y_STACK + ROW_STACK
+# The last row runs the clock unbroken to the bottom of its circle; the links sit at
+# the top of that row on the right, and the toolbox line follows the whole clock.
+ROW_TAIL = round(CENTER[1] + OUTER * SCALE + 8 - Y_TAIL)
 Y_FLOOR = Y_TAIL + ROW_TAIL
 ROW_FLOOR = 172
 TOAD_GROUND = ROW_FLOOR - 14      # the toads sit in the solid lower part of the floor
-BUBBLE_START = Y_FLOOR + ROW_FLOOR - 18   # bubbles leave from the bottom of the floor...
-BUBBLE_RISE = BUBBLE_START + 12           # ...and rise until the banner covers them
+BUBBLE_START = Y_TAIL + ROW_TAIL - 10     # bubbles rise from the foot of the clock...
+BUBBLE_RISE = BUBBLE_START + 12           # ...until the banner covers them
 ABOUT_BASELINE = 30         # description text in the about tile
 LANGS_Y = 44                # language badges under it
 LINKS_Y = 8                 # link badges near the top of the last row, just under the language badges
@@ -522,8 +646,8 @@ LINKS_Y = 8                 # link badges near the top of the last row, just und
 def rows() -> list[tuple[str, float, float, float, float]]:
     """(name, x0, y0, width, height) of every live tile, in canvas units.
 
-    Rings only reach the left column (the clock never passes x = 600). The right column
-    is the linked badges and the Orca card; the floor closes the tank across the full width.
+    The clock reaches only the left column; the right column is the linked badges and the
+    Orca card. "base" is the lower part of the clock, under the toolbox label line.
     """
     return [
         ("strip", 0, 0, W, ROW_STRIP),
@@ -536,10 +660,19 @@ def rows() -> list[tuple[str, float, float, float, float]]:
 
 def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     """Every live tile for one moment, keyed by file stem."""
-    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE)
+    _check_climb()
+    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE) + _climber_css(t)
     out = {}
     for name, x0, y0, w, h in rows():
         view = _view(x0, y0, w, h)
+        if name == "floor":
+            # the floor follows the toolbox, apart from the clock; it fades in top to bottom
+            frog, frog_css = _toads(t, w, TOAD_GROUND)
+            defs = (FLOOR_FADE + f'<mask id="fl-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="{w + 80}" height="{h + 80}">'
+                    f'<rect width="{w}" height="{h}" fill="url(#fl-fade)"/></mask>')
+            body = f'<g mask="url(#fl-mask)">{_floor(w, h)}{frog}</g>'
+            out[name] = _svg(w, h, body, title="", style=style + frog_css, defs=defs)
+            continue
         rings = _clock(t, view, highlight=name == "strip", guide=name == "strip")
         bubbles = _bubbles(x0, y0, w, BUBBLE_START)
         if name == "strip":
@@ -548,17 +681,8 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
             title = (f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)}), "
                      f"beside {sum(d['count'] for d in days)} public contributions over {len(days)} days")
             out[name] = _svg(w, h, body, title=title, style=style)
-        elif name in ("intro", "stack"):
-            out[name] = _svg(w, h, rings + bubbles, title="", style=style)
-        elif name == "tail":
-            out[name] = _svg(w, h, rings + bubbles, title="", style=style)
         else:
-            # rings run on underneath; the floor and the frog fade in over them, top to bottom
-            frog, frog_css = _toads(t, w, TOAD_GROUND)
-            defs = (FLOOR_FADE + f'<mask id="fl-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="{w + 80}" height="{h + 80}">'
-                    f'<rect width="{w}" height="{h}" fill="url(#fl-fade)"/></mask>')
-            body = rings + f'<g mask="url(#fl-mask)">{_floor(w, h)}{frog}</g>' + bubbles
-            out[name] = _svg(w, h, body, title="", style=style + frog_css, defs=defs)
+            out[name] = _svg(w, h, rings + bubbles, title="", style=style)
     return out
 
 
@@ -568,7 +692,7 @@ def link_tile(name: str) -> str:
     label = {n: l for n, _, l in LINKS}[name]
     bw, uri = _badge(name)
     body = f'<image x="0" y="{LINKS_Y}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
-    return _svg(widths[name], ROW_TAIL, body, title=label)
+    return _svg(widths[name], ROW_LINKS, body, title=label)
 
 
 def about_tile() -> str:
@@ -578,8 +702,50 @@ def about_tile() -> str:
     return _svg(COL_W, ROW_STACK, body, title=ABOUT + " Python, TypeScript, Rust, React, Tauri, SQLite.")
 
 
+def toolbox_tiles() -> list[tuple[str, str]]:
+    """Static rows for the opened toolbox, one per category, laid out in the right column.
+
+    Each row spans the full README width (the left part is empty) so it lines up with the
+    column exactly at any screen width.
+    """
+    import toolbox
+    out = []
+    gap_y = 8
+    for i, (category, tools) in enumerate(toolbox.CATALOG):
+        x, y = COL_X, 30
+        images = []
+        for name, _ in tools:
+            path = toolbox.file_for(name)
+            src = path.read_text(encoding="utf-8")
+            w = float(src.split('width="', 1)[1].split('"', 1)[0]) * BADGE_H / 20
+            if x + w > COL_X + COL_W:
+                x, y = COL_X, y + BADGE_H + gap_y
+            uri = "data:image/svg+xml;base64," + base64.b64encode(src.encode()).decode()
+            images.append(f'<image x="{x:.1f}" y="{y}" width="{w:.1f}" height="{BADGE_H}" href="{uri}"/>')
+            x += w + BADGE_GAP
+        h = max(y + BADGE_H + 14, 84)        # never shorter than one text line on a phone
+        title = (f'<text class="lp-cap" x="{COL_X}" y="18" font-size="11" letter-spacing="1.5" '
+                 f'font-family="{MONO}">{escape(category)}</text>')
+        out.append((f"toolbox-{i + 1}.svg", _svg(W, h, title + "".join(images), title=category + ": " + ", ".join(n for n, _ in tools))))
+    return out
+
+
+def spacer() -> str:
+    """An invisible, 1-unit-tall image that pushes the toolbox label over to the right column."""
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="520" height="1" viewBox="0 0 520 1"></svg>\n'
+
+
+TOOLBOX_SPACER = "47.5%"   # after the label on a right-aligned line: puts ▶ Full toolbox at the right column (tuned for ~1000–1080 px READMEs)
+
+
 def readme_block(base: str) -> str:
-    """The README paragraph that stacks the banner and every tile edge to edge."""
+    """The README top, as one HTML block (no blank lines, so GitHub adds no paragraph gaps).
+
+    Tiles stack edge to edge, and the clock runs unbroken to the bottom of its circle.
+    The toolbox line follows it, right-aligned with an invisible spacer after the label,
+    so GitHub's ▶ arrow sits right beside "Full toolbox" in the right column. Opening it
+    pushes the list, the floor and the toads down.
+    """
     def pct(width: float) -> str:   # truncate so a row never adds up to more than 100%
         return f"{math.floor(width / W * 1e6) / 1e4:g}%"
     links = "".join(
@@ -587,15 +753,23 @@ def readme_block(base: str) -> str:
         for (name, url, label), w in zip(LINKS, link_widths())
     )
     col = pct(COL_X)
+    toolbox_rows = "<br>\n".join(
+        f'<img src="assets/{name}" alt="{escape(unescape(svg.split("<title>", 1)[1].split("</title>", 1)[0]))}" width="100%" align="top" />'
+        for name, svg in toolbox_tiles()
+    )
     return (
-        '<p>\n'
-        '  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
-        f'  <img src="{base}/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>\n'
-        f'  <img src="{base}/intro.svg" alt="" width="{col}" align="top" />'
+        '<div>\n'
+        '<img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
+        f'<img src="{base}/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>\n'
+        f'<img src="{base}/intro.svg" alt="" width="{col}" align="top" />'
         f'<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{pct(COL_W)}" align="top" /></a><br>\n'
-        f'  <img src="{base}/stack.svg" alt="" width="{col}" align="top" />'
+        f'<img src="{base}/stack.svg" alt="" width="{col}" align="top" />'
         f'<img src="assets/about.svg" alt="{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite." width="{pct(COL_W)}" align="top" /><br>\n'
-        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" />{links}<br>\n'
-        f'  <img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
-        '</p>\n'
+        f'<img src="{base}/tail.svg" alt="" width="{col}" align="top" />{links}\n'
+        '<div align="right"><details>\n'
+        f'<summary><sub>Full toolbox</sub><img src="assets/spacer.svg" alt="" width="{TOOLBOX_SPACER}" /></summary>\n'
+        f'{toolbox_rows}\n'
+        '</details></div>\n'
+        f'<img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
+        '</div>\n'
     )
