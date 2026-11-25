@@ -59,9 +59,13 @@ ROW_TAIL = 84                     # LinkedIn and Handshake, under those
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
+# One palette everywhere. Images can't see GitHub's theme (a light-mode phone viewing
+# GitHub in dark would flip the colours), so the light text carries a thin dark halo
+# instead: invisible on a dark page, and still readable on a white one.
+HALO = "stroke:#0d1117;stroke-opacity:.85;stroke-linejoin:round;paint-order:stroke"
 COLORS = (
-    ".lp-dim{fill:#4a475f}.lp-lit{fill:#f1ecfa}.lp-txt{fill:#e6edf3}.lp-cap{fill:#999cb5}"
-    "@media (prefers-color-scheme:light){.lp-dim{fill:#cfcadf}.lp-lit{fill:#2b2540}.lp-txt{fill:#1f2328}.lp-cap{fill:#6e7187}}"
+    ".lp-dim{fill:#4a475f}.lp-cap{fill:#999cb5}"
+    f".lp-lit{{fill:#f1ecfa;{HALO};stroke-width:2.6px}}.lp-txt{{fill:#e6edf3;{HALO};stroke-width:2.2px}}"
 )
 
 _CN = "零一二三四五六七八九十"
@@ -192,10 +196,6 @@ def _keyframes(t: datetime) -> str:
 def _clock(t: datetime, view, *, highlight: bool, guide: bool) -> str:
     cx, cy, s = view[:3]
     parts = []
-    if guide:
-        start = (SEAL[0] + SEAL[2] + 6 - cx) / s  # the faint radius starts past the seal at the hub
-        reach = (DIVIDER_X - 14 - cx) / s         # and stops short of the divider
-        parts.append(f'<path d="M{start:.0f} 0H{reach:.0f}" stroke="#92d8cf" stroke-opacity=".12" stroke-width="1.2"/>')
     rings = _ring_markup(t, view)
     if rings:
         parts.append(f'<g class="lp-dim">{rings}</g>')
@@ -214,7 +214,7 @@ SLIT = f'<clipPath id="lp-slit"><rect x="0" y="{-FONT * 0.66:.2f}" width="{OUTER
 # A real 罗盘 also reads the season and the double-hour. They sit in a small seal at the
 # compass hub, just left of the bright row, so the six wallpaper rings stay as they are.
 
-SEAL = (8, 48, 36, 36)      # x, y, width, height inside the strip
+SEAL = (5, 41, 49, 50)      # x, y, width, height inside the strip (ends just before the bright row)
 SOLAR_TERMS = [  # name, C for the 21st-century day formula  [Y·0.2422 + C] − L
     ("小寒", 5.4055), ("大寒", 20.12), ("立春", 3.87), ("雨水", 18.73), ("惊蛰", 5.63), ("春分", 20.646),
     ("清明", 4.81), ("谷雨", 20.1), ("立夏", 5.52), ("小满", 21.04), ("芒种", 5.678), ("夏至", 21.37),
@@ -247,9 +247,9 @@ def _seal(t: datetime) -> str:
     return (
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="#b9a0e9" fill-opacity=".06" '
         f'stroke="#b9a0e9" stroke-opacity=".5"/>'
-        f'<g class="lp-lit" font-size="13" font-family="{FONT_FAMILY}" text-anchor="middle" dominant-baseline="central">'
-        f'<text x="{mid}" y="{y + h * .29:.1f}">{solar_term(t)}</text>'
-        f'<text x="{mid}" y="{y + h * .73:.1f}">{shichen(t)}</text></g>'
+        f'<g class="lp-lit" font-size="19.5" font-family="{FONT_FAMILY}" text-anchor="middle" dominant-baseline="central">'
+        f'<text x="{mid}" y="{y + h * .28:.1f}">{solar_term(t)}</text>'
+        f'<text x="{mid}" y="{y + h * .74:.1f}">{shichen(t)}</text></g>'
     )
 
 
