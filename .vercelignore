@@ -1,0 +1,7 @@
+# Only the clock endpoint is deployed: its function and the drawing code it imports.
+assets
+banner
+dev
+.github
+*.md
+.claude

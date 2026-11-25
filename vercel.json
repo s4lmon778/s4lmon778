@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/clock.py": {
+      "includeFiles": "clock/**"
+    }
+  }
+}

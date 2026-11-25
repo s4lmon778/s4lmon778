@@ -312,22 +312,34 @@ FLOOR_FADE = '<linearGradient id="fl-fade" x2="0" y2="1"><stop stop-color="#fff"
              '<stop offset=".28" stop-color="#fff" stop-opacity=".3"/><stop offset=".52" stop-color="#fff"/></linearGradient>'
 
 
-def _floor(w: float, h: float) -> str:
+# Floor colours. The dark set matches the banner; the light set is for GitHub's light
+# theme, where fading into dark navy reads as a grey smudge on the white page.
+FLOOR_DARK = {"bg": ("#0c101d", "#111528", "#17132a"), "mint": ("#58dbca", .16), "violet": ("#8760e4", .2),
+              "line": "#a890ee", "line2": "#79d7d0", "drift": "#97e8dc", "border": ("#a99bce", .14),
+              "sediment": ["#b9a0e9", "#92d8cf", "#cfd9ff"], "sediment_alpha": (.12, .42)}
+FLOOR_LIGHT = {"bg": ("#f3f0fa", "#eef1f8", "#ece7f7"), "mint": ("#5fcfbf", .22), "violet": ("#9a7ee6", .2),
+               "line": "#8f78d6", "line2": "#4fb6aa", "drift": "#3fa89b", "border": ("#9a8fc4", .22),
+               "sediment": ["#8f78d6", "#4fb6aa", "#7d8fc9"], "sediment_alpha": (.2, .5)}
+
+
+def _floor(w: float, h: float, pal: dict = FLOOR_DARK) -> str:
     from random import Random
     rng = Random(1778)
+    lo, hi = pal["sediment_alpha"]
     sediment = "".join(
         f'<circle cx="{rng.uniform(10, w - 10):.1f}" cy="{rng.uniform(h * .62, h - 7):.1f}" '
-        f'r="{rng.uniform(.5, 1.6):.1f}" fill="{rng.choice(["#b9a0e9", "#92d8cf", "#cfd9ff"])}" opacity="{rng.uniform(.12, .42):.2f}"/>'
+        f'r="{rng.uniform(.5, 1.6):.1f}" fill="{rng.choice(pal["sediment"])}" opacity="{rng.uniform(lo, hi):.2f}"/>'
         for _ in range(60)
     )
     wave = lambda y: f"M-80 {y:.0f}Q170 {y - 14:.0f} 410 {y - 2:.0f}T910 {y:.0f}T1320 {y - 10:.0f}"
+    b0, b1, b2 = pal["bg"]
     return (
-        '<defs><linearGradient id="fl-bg" x2="1" y2="1"><stop stop-color="#0c101d"/><stop offset=".55" stop-color="#111528"/>'
-        '<stop offset="1" stop-color="#17132a"/></linearGradient>'
-        '<radialGradient id="fl-mint"><stop stop-color="#58dbca" stop-opacity=".16"/><stop offset="1" stop-color="#58dbca" stop-opacity="0"/></radialGradient>'
-        '<radialGradient id="fl-violet"><stop stop-color="#8760e4" stop-opacity=".2"/><stop offset="1" stop-color="#8760e4" stop-opacity="0"/></radialGradient>'
-        '<linearGradient id="fl-line"><stop stop-color="#a890ee" stop-opacity="0"/><stop offset=".5" stop-color="#a890ee" stop-opacity=".7"/>'
-        '<stop offset="1" stop-color="#79d7d0" stop-opacity="0"/></linearGradient>'
+        f'<defs><linearGradient id="fl-bg" x2="1" y2="1"><stop stop-color="{b0}"/><stop offset=".55" stop-color="{b1}"/>'
+        f'<stop offset="1" stop-color="{b2}"/></linearGradient>'
+        f'<radialGradient id="fl-mint"><stop stop-color="{pal["mint"][0]}" stop-opacity="{pal["mint"][1]}"/><stop offset="1" stop-color="{pal["mint"][0]}" stop-opacity="0"/></radialGradient>'
+        f'<radialGradient id="fl-violet"><stop stop-color="{pal["violet"][0]}" stop-opacity="{pal["violet"][1]}"/><stop offset="1" stop-color="{pal["violet"][0]}" stop-opacity="0"/></radialGradient>'
+        f'<linearGradient id="fl-line"><stop stop-color="{pal["line"]}" stop-opacity="0"/><stop offset=".5" stop-color="{pal["line"]}" stop-opacity=".7"/>'
+        f'<stop offset="1" stop-color="{pal["line2"]}" stop-opacity="0"/></linearGradient>'
         f'<clipPath id="fl-card"><rect width="{w}" height="{h}" rx="24"/></clipPath></defs>'
         '<style>@keyframes fl-drift{to{stroke-dashoffset:-100}}.fl-drift{animation:fl-drift 8s linear infinite}'
         '@media (prefers-reduced-motion:reduce){.fl-drift{animation:none}}</style>'
@@ -335,9 +347,9 @@ def _floor(w: float, h: float) -> str:
         f'<ellipse cx="330" cy="{h + 10}" rx="520" ry="{h * .7:.0f}" fill="url(#fl-mint)"/>'
         f'<ellipse cx="930" cy="{h * .55:.0f}" rx="380" ry="{h * .6:.0f}" fill="url(#fl-violet)"/>'
         f'<g fill="none" stroke="url(#fl-line)"><path d="{wave(h * .66)}" opacity=".32"/><path d="{wave(h * .8)}" opacity=".2"/>'
-        f'<path class="fl-drift" d="{wave(h * .66)}" stroke="#97e8dc" stroke-dasharray="3 22" opacity=".22"/></g>'
+        f'<path class="fl-drift" d="{wave(h * .66)}" stroke="{pal["drift"]}" stroke-dasharray="3 22" opacity=".22"/></g>'
         f"{sediment}</g>"
-        f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="23.5" fill="none" stroke="#a99bce" stroke-opacity=".14"/>'
+        f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="23.5" fill="none" stroke="{pal["border"][0]}" stroke-opacity="{pal["border"][1]}"/>'
     )
 
 
@@ -647,6 +659,10 @@ BUBBLES = False            # the rising bubbles are switched off; their code sta
 # (measured on the live profile): the one-column layout under ~750 px, and the sidebar
 # layout from 768 px until ~1100 px. There the README shows the clock full width instead.
 WRAP_MEDIA = "(max-width: 750px), (min-width: 768px) and (max-width: 1100px)"
+# The clock itself is drawn live, per view, by api/clock.py on Vercel (GitHub runs the
+# scheduled redraw too rarely to keep the time right). After changing the drawing code,
+# redeploy it with:  npx vercel deploy --prod
+LIVE_CLOCK = "https://s4lmon778.vercel.app/api/clock"
 ROW_FLOOR = 172
 TOAD_GROUND = ROW_FLOOR - 14      # the toads sit in the solid lower part of the floor
 BUBBLE_START = CLOCK_H - 10                # bubbles rise from the foot of the clock...
@@ -663,7 +679,20 @@ def rows() -> list[tuple[str, float, float, float, float]]:
         ("clock-wide", 0, 0, WIDE_W, CLOCK_H),
         ("spark", COL_X, 0, COL_W, ROW_STRIP),
         ("floor", 0, CLOCK_H, W, ROW_FLOOR),
+        ("floor-light", 0, CLOCK_H, W, ROW_FLOOR),
     ]
+
+
+def clock_svg(t: datetime, wide: bool = False) -> str:
+    """The clock image for moment t. The live endpoint (api/clock.py) calls this on every
+    profile view, so the clock shows the real California time when the page loads."""
+    w = WIDE_W if wide else COL_X
+    view = _view(0, 0, w, CLOCK_H)
+    style = _keyframes(t) + (_bubble_css(t, BUBBLE_RISE) if BUBBLES else "") + (_climber_css(t) if CLIMBER else "")
+    body = (_clock(t, view, highlight=True, guide=False, climber=False) + (_bubbles(0, 0, w, BUBBLE_START) if BUBBLES else "")
+            + _seal(t) + (_climber() if CLIMBER else ""))
+    title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M:%S %Z} ({solar_term(t)}, {shichen(t)})"
+    return _svg(w, CLOCK_H, body, title=title, style=style)
 
 
 def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
@@ -674,11 +703,7 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     out = {}
     for name, x0, y0, w, h in rows():
         if name in ("clock", "clock-wide"):
-            view = _view(x0, y0, w, h)
-            body = (_clock(t, view, highlight=True, guide=False, climber=False) + (_bubbles(x0, y0, w, BUBBLE_START) if BUBBLES else "")
-                    + _seal(t) + (_climber() if CLIMBER else ""))
-            title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)})"
-            out[name] = _svg(w, h, body, title=title, style=style)
+            out[name] = clock_svg(t, wide=name == "clock-wide")
         elif name == "spark":
             title = f"{sum(d['count'] for d in days)} public contributions over the last {len(days)} days"
             out[name] = _svg(w, h, sparkline(days, 0, SPARK[1], SPARK[2], SPARK[3]), title=title)
@@ -687,7 +712,8 @@ def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
             frog, frog_css = _toads(t, w, TOAD_GROUND)
             defs = (FLOOR_FADE + f'<mask id="fl-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="{w + 80}" height="{h + 80}">'
                     f'<rect width="{w}" height="{h}" fill="url(#fl-fade)"/></mask>')
-            body = f'<g mask="url(#fl-mask)">{_floor(w, h)}{frog}</g>'
+            pal = FLOOR_LIGHT if name == "floor-light" else FLOOR_DARK
+            body = f'<g mask="url(#fl-mask)">{_floor(w, h, pal)}{frog}</g>'
             out[name] = _svg(w, h, body, title="", style=style + frog_css, defs=defs)
     return out
 
@@ -792,8 +818,8 @@ def readme_block(base: str) -> str:
     return (
         '<div>\n'
         '<img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
-        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/{live}/clock-wide.svg" width="100%">'
-        f'<img src="{base}/{live}/clock.svg" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
+        f'<picture><source media="{WRAP_MEDIA}" srcset="{LIVE_CLOCK}?wide=1" width="100%">'
+        f'<img src="{LIVE_CLOCK}" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
         + column(f"{base}/{live}/spark.svg", "90 days of public GitHub activity", right, "100%") + '<br>\n'
         + '<a href="https://github.com/stablyai/orca">'
         + column(_v("assets/orca-contributor.svg"), "Contributor to Orca · 135k+ GitHub stars", right, "100%") + '</a><br>\n'
@@ -804,6 +830,8 @@ def readme_block(base: str) -> str:
         '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
         '</details>\n'
-        f'<img src="{base}/{live}/floor.svg" alt="" width="100%" align="top" />\n'
+        # GitHub's <picture> follows its own light/dark theme setting, so the light page gets a light floor
+        f'<picture><source media="(prefers-color-scheme: light)" srcset="{base}/{live}/floor-light.svg">'
+        f'<img src="{base}/{live}/floor.svg" alt="" width="100%" align="top" /></picture>\n'
         '</div>\n'
     )

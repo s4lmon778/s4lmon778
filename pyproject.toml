@@ -1,0 +1,9 @@
+[project]
+name = "s4lmon778-clock"
+version = "0.1.0"
+description = "Live clock image for the s4lmon778 GitHub profile"
+requires-python = ">=3.11"
+dependencies = ["tzdata"]
+
+[tool.vercel]
+entrypoint = "api.clock:handler"
