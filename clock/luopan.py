@@ -748,6 +748,17 @@ def _v(path: str) -> str:
     return f"{path}?v={digest}"
 
 
+def _code_version() -> str:
+    """Short hash of the drawing code: it goes on the live tiles' links, so a code change
+    (not the half-hourly redraw) gives them new URLs and GitHub can't keep an old drawing."""
+    import hashlib
+    here = Path(__file__).resolve().parent
+    digest = hashlib.sha1()
+    for name in ("luopan.py", "toad_sprites.py", "toolbox.py"):
+        digest.update((here / name).read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()[:8]
+
+
 def readme_block(base: str) -> str:
     """The README top, as one HTML block (no blank lines, so GitHub adds no paragraph gaps).
 
@@ -772,6 +783,7 @@ def readme_block(base: str) -> str:
         for (name, url, label), w in zip(LINKS, link_widths())
     )
     right = RIGHT_COLUMN
+    live = _code_version()
     toolbox_rows = "<br>\n".join(
         f'<img src="{_v(f"assets/{name}")}" alt="{escape(unescape(svg.split("<title>", 1)[1].split("</title>", 1)[0]))}" width="100%" align="top" />'
         for name, svg in toolbox_tiles()
@@ -779,9 +791,9 @@ def readme_block(base: str) -> str:
     return (
         '<div>\n'
         '<img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
-        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/clock-wide.svg" width="100%">'
-        f'<img src="{base}/clock.svg" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
-        + column(f"{base}/spark.svg", "90 days of public GitHub activity", right, "100%") + '<br>\n'
+        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/clock-wide.svg?v={live}" width="100%">'
+        f'<img src="{base}/clock.svg?v={live}" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
+        + column(f"{base}/spark.svg?v={live}", "90 days of public GitHub activity", right, "100%") + '<br>\n'
         + '<a href="https://github.com/stablyai/orca">'
         + column(_v("assets/orca-contributor.svg"), "Contributor to Orca · 135k+ GitHub stars", right, "100%") + '</a><br>\n'
         + column(_v("assets/about.svg"), f"{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite.", right, "100%") + '<br>\n'
@@ -791,6 +803,6 @@ def readme_block(base: str) -> str:
         '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
         '</details>\n'
-        f'<img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
+        f'<img src="{base}/floor.svg?v={live}" alt="" width="100%" align="top" />\n'
         '</div>\n'
     )
