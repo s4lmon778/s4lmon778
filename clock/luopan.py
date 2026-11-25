@@ -749,8 +749,9 @@ def _v(path: str) -> str:
 
 
 def _code_version() -> str:
-    """Short hash of the drawing code: it goes on the live tiles' links, so a code change
-    (not the half-hourly redraw) gives them new URLs and GitHub can't keep an old drawing."""
+    """Short hash of the drawing code. The live tiles are published in a folder named after it,
+    so a code change (not the half-hourly redraw) gives them new paths: GitHub's file CDN
+    ignores query strings, so only a new path guarantees nobody sees an old design."""
     import hashlib
     here = Path(__file__).resolve().parent
     digest = hashlib.sha1()
@@ -791,9 +792,9 @@ def readme_block(base: str) -> str:
     return (
         '<div>\n'
         '<img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
-        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/clock-wide.svg?v={live}" width="100%">'
-        f'<img src="{base}/clock.svg?v={live}" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
-        + column(f"{base}/spark.svg?v={live}", "90 days of public GitHub activity", right, "100%") + '<br>\n'
+        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/{live}/clock-wide.svg" width="100%">'
+        f'<img src="{base}/{live}/clock.svg" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
+        + column(f"{base}/{live}/spark.svg", "90 days of public GitHub activity", right, "100%") + '<br>\n'
         + '<a href="https://github.com/stablyai/orca">'
         + column(_v("assets/orca-contributor.svg"), "Contributor to Orca · 135k+ GitHub stars", right, "100%") + '</a><br>\n'
         + column(_v("assets/about.svg"), f"{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite.", right, "100%") + '<br>\n'
@@ -803,6 +804,6 @@ def readme_block(base: str) -> str:
         '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
         '</details>\n'
-        f'<img src="{base}/floor.svg?v={live}" alt="" width="100%" align="top" />\n'
+        f'<img src="{base}/{live}/floor.svg" alt="" width="100%" align="top" />\n'
         '</div>\n'
     )

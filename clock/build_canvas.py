@@ -65,7 +65,11 @@ def main() -> None:
     except Exception as exc:  # network hiccup or markup change: keep the last good public snapshot
         print(f"activity fetch failed ({exc}); using snapshot", file=sys.stderr)
         days = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    version = luopan._code_version()
     for name, svg in luopan.tiles(t, days).items():
+        # each drawing-code version gets its own folder: a design change is a new address the
+        # file CDN has never cached (it ignores query strings); root copies stay for old links
+        write(out / version / f"{name}.svg", svg)
         write(out / f"{name}.svg", svg)
     print(f"wrote tiles to {out} at {t:%Y-%m-%d %H:%M:%S %Z}, {sum(d['count'] for d in days)} public contributions / {len(days)} days")
 
