@@ -700,28 +700,25 @@ def about_tile() -> str:
 
 
 def toolbox_tiles() -> list[tuple[str, str]]:
-    """Static rows for the opened toolbox, one per category, laid out in the right column.
-
-    Each row spans the full README width (the left part is empty) so it lines up with the
-    column exactly at any screen width.
+    """Static rows for the opened toolbox, one per category, across the full README width.
     """
     import toolbox
     out = []
     gap_y = 8
     for i, (category, tools) in enumerate(toolbox.CATALOG):
-        x, y = COL_X, 30
+        x, y = 0, 30
         images = []
         for name, _ in tools:
             path = toolbox.file_for(name)
             src = path.read_text(encoding="utf-8")
             w = float(src.split('width="', 1)[1].split('"', 1)[0]) * BADGE_H / 20
-            if x + w > COL_X + COL_W:
-                x, y = COL_X, y + BADGE_H + gap_y
+            if x + w > W:
+                x, y = 0, y + BADGE_H + gap_y
             uri = "data:image/svg+xml;base64," + base64.b64encode(src.encode()).decode()
             images.append(f'<image x="{x:.1f}" y="{y}" width="{w:.1f}" height="{BADGE_H}" href="{uri}"/>')
             x += w + BADGE_GAP
         h = max(y + BADGE_H + 14, 84)        # never shorter than one text line on a phone
-        title = (f'<text class="lp-cap" x="{COL_X}" y="18" font-size="11" letter-spacing="1.5" '
+        title = (f'<text class="lp-cap" x="0" y="18" font-size="11" letter-spacing="1.5" '
                  f'font-family="{MONO}">{escape(category)}</text>')
         out.append((f"toolbox-{i + 1}.svg", _svg(W, h, title + "".join(images), title=category + ": " + ", ".join(n for n, _ in tools))))
     return out
@@ -733,15 +730,15 @@ def spacer() -> str:
 
 
 RIGHT_COLUMN = "52%"       # beside the floated clock: GitHub pads floated images 20 px, so leave room
-TOOLBOX_SPACER = "45.6%"   # after the label on a right-aligned line: puts ▶ Full toolbox at the right column (tuned for ~1000–1080 px READMEs)
 
 
 def readme_block(base: str) -> str:
     """The README top, as one HTML block (no blank lines, so GitHub adds no paragraph gaps).
 
     The clock is one image floated left; the right column stacks beside it. A full-width
-    sliver then drops below the clock, the toolbox line follows (right-aligned, with
-    GitHub's ▶ right beside the label), and opening it pushes the floor and toads down.
+    sliver then drops below the clock, and everything after it is full width: the toolbox
+    line at the left edge, its categories across the page when opened, then the floor
+    and toads, which move down when the toolbox opens.
     """
     def pct(width: float) -> str:   # truncate so a row never adds up to more than 100%
         return f"{math.floor(width / W * 1e6) / 1e4:g}%"
@@ -763,10 +760,10 @@ def readme_block(base: str) -> str:
         f'<img src="assets/about.svg" alt="{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite." width="{right}" align="top" /><br>\n'
         f'{links}<br>\n'
         '<img src="assets/spacer.svg" alt="" width="100%" />\n'
-        '<div align="right"><details>\n'
-        f'<summary><sub>Full toolbox</sub><img src="assets/spacer.svg" alt="" width="{TOOLBOX_SPACER}" /></summary>\n'
+        '<details>\n'
+        '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
-        '</details></div>\n'
+        '</details>\n'
         f'<img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
         '</div>\n'
     )
