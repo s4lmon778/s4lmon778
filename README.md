@@ -1,17 +1,17 @@
 <div>
 <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>
-<img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/clock.svg" alt="罗盘 clock in Pacific time" width="45%" align="left" /><img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/spark.svg" alt="90 days of public GitHub activity" width="52%" align="top" /><br>
-<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="52%" align="top" /></a><br>
-<img src="assets/about.svg" alt="Desktop tools, web interfaces, and data experiments. Python, TypeScript, Rust, React, Tauri, SQLite." width="52%" align="top" /><br>
-<a href="https://www.linkedin.com/in/chen778"><img src="assets/link-linkedin.svg" alt="LinkedIn" width="9.9249%" align="top" /></a><a href="https://ucsd.joinhandshake.com/profiles/uwu7a3"><img src="assets/link-handshake.svg" alt="Handshake" width="10.1833%" align="top" /></a><br>
-<img src="assets/spacer.svg" alt="" width="100%" />
+<picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/clock-wide.svg" width="100%"><img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/clock.svg" alt="罗盘 clock in Pacific time" width="45%" align="left" /></picture><picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/spark.svg" width="100%"><img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/spark.svg" alt="90 days of public GitHub activity" width="52%" align="top" /></picture><br>
+<a href="https://github.com/stablyai/orca"><picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="assets/orca-contributor.svg?v=dacba63c" width="100%"><img src="assets/orca-contributor.svg?v=dacba63c" alt="Contributor to Orca · 135k+ GitHub stars" width="52%" align="top" /></picture></a><br>
+<picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="assets/about.svg?v=b8dd095f" width="100%"><img src="assets/about.svg?v=b8dd095f" alt="Desktop tools, web interfaces, and data experiments. Python, TypeScript, Rust, React, Tauri, SQLite." width="52%" align="top" /></picture><br>
+<a href="https://www.linkedin.com/in/chen778"><picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="assets/link-linkedin.svg?v=c4065c1c" width="19.0865%"><img src="assets/link-linkedin.svg?v=c4065c1c" alt="LinkedIn" width="9.9249%" align="top" /></picture></a><a href="https://ucsd.joinhandshake.com/profiles/uwu7a3"><picture><source media="(max-width: 750px), (min-width: 768px) and (max-width: 1100px)" srcset="assets/link-handshake.svg?v=44be06d4" width="19.5833%"><img src="assets/link-handshake.svg?v=44be06d4" alt="Handshake" width="10.1833%" align="top" /></picture></a><br>
+<img src="assets/spacer.svg?v=190e6c91" alt="" width="100%" />
 <details>
 <summary><sub>Full toolbox</sub></summary>
-<img src="assets/toolbox-1.svg" alt="LANGUAGES &amp; FORMATS: Python, TypeScript, JavaScript, Rust, SQL, HTML, CSS, PowerShell, Batch, Markdown, JSON, YAML, SVG" width="100%" align="top" /><br>
-<img src="assets/toolbox-2.svg" alt="INTERFACES &amp; DESKTOP: React, React Router, Tauri, Electron, Vite, Tailwind CSS, Zustand, Recharts, Lucide, Canvas, Tkinter" width="100%" align="top" /><br>
-<img src="assets/toolbox-3.svg" alt="DATA, SERVERS &amp; MEDIA: SQLite, pandas, NumPy, Streamlit, FastAPI, Uvicorn, HTTPX, Pillow, FFmpeg, faster-whisper, WebRTC, PeerJS, WebSockets, sql.js" width="100%" align="top" /><br>
-<img src="assets/toolbox-4.svg" alt="BUILD, TEST &amp; SHIP: Git, GitHub, GitHub CLI, GitHub Actions, Node.js, npm, Bun, pnpm, uv, Playwright, Vitest, Testing Library, unittest, ESLint, Prettier, Oxlint, CodeQL, Dependabot" width="100%" align="top" /><br>
-<img src="assets/toolbox-5.svg" alt="EDITORS &amp; AI COMPANIONS: Orca, VS Code, Codex, Claude Code, ChatGPT, DeepSeek" width="100%" align="top" />
+<img src="assets/toolbox-1.svg?v=0e275cc7" alt="LANGUAGES &amp; FORMATS: Python, TypeScript, JavaScript, Rust, SQL, HTML, CSS, PowerShell, Batch, Markdown, JSON, YAML, SVG" width="100%" align="top" /><br>
+<img src="assets/toolbox-2.svg?v=4c0e3f64" alt="INTERFACES &amp; DESKTOP: React, React Router, Tauri, Electron, Vite, Tailwind CSS, Zustand, Recharts, Lucide, Canvas, Tkinter" width="100%" align="top" /><br>
+<img src="assets/toolbox-3.svg?v=6955a8c9" alt="DATA, SERVERS &amp; MEDIA: SQLite, pandas, NumPy, Streamlit, FastAPI, Uvicorn, HTTPX, Pillow, FFmpeg, faster-whisper, WebRTC, PeerJS, WebSockets, sql.js" width="100%" align="top" /><br>
+<img src="assets/toolbox-4.svg?v=73df3e66" alt="BUILD, TEST &amp; SHIP: Git, GitHub, GitHub CLI, GitHub Actions, Node.js, npm, Bun, pnpm, uv, Playwright, Vitest, Testing Library, unittest, ESLint, Prettier, Oxlint, CodeQL, Dependabot" width="100%" align="top" /><br>
+<img src="assets/toolbox-5.svg?v=a612f2fd" alt="EDITORS &amp; AI COMPANIONS: Orca, VS Code, Codex, Claude Code, ChatGPT, DeepSeek" width="100%" align="top" />
 </details>
 <img src="https://raw.githubusercontent.com/s4lmon778/s4lmon778/clock/floor.svg" alt="" width="100%" align="top" />
 </div>

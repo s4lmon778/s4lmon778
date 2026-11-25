@@ -640,6 +640,12 @@ def _view(x0: float, y0: float, w: float, h: float):
 # description and badges, links) stacks beside it. One image means one timeline: every
 # ring, the seal, the bubbles and the climber always agree, and there are no seams.
 CLOCK_H = round(CENTER[1] + OUTER * SCALE + 8)     # down to the bottom of the clock's circle
+WIDE_W = round(CENTER[0] + OUTER * SCALE + 8)      # the same clock cropped to its rings, shown full width when the column wraps
+CLIMBER = False            # the stick figure is switched off for now; its code stays below
+# Window widths where GitHub's README is too narrow for the right column beside the clock
+# (measured on the live profile): the one-column layout under ~750 px, and the sidebar
+# layout from 768 px until ~1100 px. There the README shows the clock full width instead.
+WRAP_MEDIA = "(max-width: 750px), (min-width: 768px) and (max-width: 1100px)"
 ROW_FLOOR = 172
 TOAD_GROUND = ROW_FLOOR - 14      # the toads sit in the solid lower part of the floor
 BUBBLE_START = CLOCK_H - 10                # bubbles rise from the foot of the clock...
@@ -653,6 +659,7 @@ def rows() -> list[tuple[str, float, float, float, float]]:
     """(name, x0, y0, width, height) of every live tile, in canvas units."""
     return [
         ("clock", 0, 0, COL_X, CLOCK_H),
+        ("clock-wide", 0, 0, WIDE_W, CLOCK_H),
         ("spark", COL_X, 0, COL_W, ROW_STRIP),
         ("floor", 0, CLOCK_H, W, ROW_FLOOR),
     ]
@@ -660,14 +667,15 @@ def rows() -> list[tuple[str, float, float, float, float]]:
 
 def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     """Every live tile for one moment, keyed by file stem."""
-    _check_climb()
-    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE) + _climber_css(t)
+    if CLIMBER:
+        _check_climb()
+    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE) + (_climber_css(t) if CLIMBER else "")
     out = {}
     for name, x0, y0, w, h in rows():
-        if name == "clock":
+        if name in ("clock", "clock-wide"):
             view = _view(x0, y0, w, h)
             body = (_clock(t, view, highlight=True, guide=False, climber=False) + _bubbles(x0, y0, w, BUBBLE_START)
-                    + _seal(t) + _climber())
+                    + _seal(t) + (_climber() if CLIMBER else ""))
             title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)})"
             out[name] = _svg(w, h, body, title=title, style=style)
         elif name == "spark":
@@ -732,6 +740,13 @@ def spacer() -> str:
 RIGHT_COLUMN = "52%"       # beside the floated clock: GitHub pads floated images 20 px, so leave room
 
 
+def _v(path: str) -> str:
+    """assets/x.svg -> assets/x.svg?v=<content hash>: a changed file gets a new URL, so no stale cache."""
+    import hashlib
+    digest = hashlib.sha1((ASSETS.parent / path).read_bytes()).hexdigest()[:8]
+    return f"{path}?v={digest}"
+
+
 def readme_block(base: str) -> str:
     """The README top, as one HTML block (no blank lines, so GitHub adds no paragraph gaps).
 
@@ -742,24 +757,35 @@ def readme_block(base: str) -> str:
     """
     def pct(width: float) -> str:   # truncate so a row never adds up to more than 100%
         return f"{math.floor(width / W * 1e6) / 1e4:g}%"
+
+    def column(src: str, alt: str, width: str, wrapped: str) -> str:
+        """A right-column image: its column width beside the clock, `wrapped` when it drops below."""
+        return (f'<picture><source media="{WRAP_MEDIA}" srcset="{src}" width="{wrapped}">'
+                f'<img src="{src}" alt="{alt}" width="{width}" align="top" /></picture>')
+
+    grow = 100 / float(RIGHT_COLUMN.rstrip("%"))       # column width → full width when wrapped
     links = "".join(
-        f'<a href="{url}"><img src="assets/link-{name}.svg" alt="{label}" width="{pct(w)}" align="top" /></a>'
+        f'<a href="{url}">'
+        + column(_v(f"assets/link-{name}.svg"), label, pct(w), f"{math.floor(w / W * grow * 1e6) / 1e4:g}%")
+        + "</a>"
         for (name, url, label), w in zip(LINKS, link_widths())
     )
     right = RIGHT_COLUMN
     toolbox_rows = "<br>\n".join(
-        f'<img src="assets/{name}" alt="{escape(unescape(svg.split("<title>", 1)[1].split("</title>", 1)[0]))}" width="100%" align="top" />'
+        f'<img src="{_v(f"assets/{name}")}" alt="{escape(unescape(svg.split("<title>", 1)[1].split("</title>", 1)[0]))}" width="100%" align="top" />'
         for name, svg in toolbox_tiles()
     )
     return (
         '<div>\n'
         '<img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
-        f'<img src="{base}/clock.svg" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" />'
-        f'<img src="{base}/spark.svg" alt="90 days of public GitHub activity" width="{right}" align="top" /><br>\n'
-        f'<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{right}" align="top" /></a><br>\n'
-        f'<img src="assets/about.svg" alt="{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite." width="{right}" align="top" /><br>\n'
+        f'<picture><source media="{WRAP_MEDIA}" srcset="{base}/clock-wide.svg" width="100%">'
+        f'<img src="{base}/clock.svg" alt="罗盘 clock in Pacific time" width="{pct(COL_X)}" align="left" /></picture>'
+        + column(f"{base}/spark.svg", "90 days of public GitHub activity", right, "100%") + '<br>\n'
+        + '<a href="https://github.com/stablyai/orca">'
+        + column(_v("assets/orca-contributor.svg"), "Contributor to Orca · 135k+ GitHub stars", right, "100%") + '</a><br>\n'
+        + column(_v("assets/about.svg"), f"{ABOUT} Python, TypeScript, Rust, React, Tauri, SQLite.", right, "100%") + '<br>\n'
         f'{links}<br>\n'
-        '<img src="assets/spacer.svg" alt="" width="100%" />\n'
+        f'<img src="{_v("assets/spacer.svg")}" alt="" width="100%" />\n'
         '<details>\n'
         '<summary><sub>Full toolbox</sub></summary>\n'
         f'{toolbox_rows}\n'
