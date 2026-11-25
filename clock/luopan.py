@@ -53,8 +53,8 @@ ORCA_ASPECT = 1200 / 190
 # Every row is at least ~82 units tall: on a phone that is still taller than one
 # 24 px text line, which is what keeps the stacked images from opening gaps.
 ROW_STRIP = 132
-ROW_INTRO = 84
-ROW_STACK = COL_W / ORCA_ASPECT
+ROW_INTRO = COL_W / ORCA_ASPECT   # description beside the Orca card
+ROW_STACK = 84                    # language badges beside the LinkedIn / Handshake badges
 ROW_TAIL = 90
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
@@ -193,8 +193,9 @@ def _clock(t: datetime, view, *, highlight: bool, guide: bool) -> str:
     cx, cy, s = view[:3]
     parts = []
     if guide:
-        reach = (DIVIDER_X - 14 - cx) / s       # the faint radius stops short of the divider
-        parts.append(f'<path d="M0 0H{reach:.0f}" stroke="#92d8cf" stroke-opacity=".12" stroke-width="1.2"/>')
+        start = (SEAL[0] + SEAL[2] + 6 - cx) / s  # the faint radius starts past the seal at the hub
+        reach = (DIVIDER_X - 14 - cx) / s         # and stops short of the divider
+        parts.append(f'<path d="M{start:.0f} 0H{reach:.0f}" stroke="#92d8cf" stroke-opacity=".12" stroke-width="1.2"/>')
     rings = _ring_markup(t, view)
     if rings:
         parts.append(f'<g class="lp-dim">{rings}</g>')
@@ -207,6 +208,257 @@ def _clock(t: datetime, view, *, highlight: bool, guide: bool) -> str:
 
 
 SLIT = f'<clipPath id="lp-slit"><rect x="0" y="{-FONT * 0.66:.2f}" width="{OUTER:.0f}" height="{FONT * 1.32:.2f}"/></clipPath>'
+
+
+# ------------------------------------------------------------------ 节气 and 时辰 seal at the hub
+# A real 罗盘 also reads the season and the double-hour. They sit in a small seal at the
+# compass hub, just left of the bright row, so the six wallpaper rings stay as they are.
+
+SEAL = (8, 48, 36, 36)      # x, y, width, height inside the strip
+SOLAR_TERMS = [  # name, C for the 21st-century day formula  [Y·0.2422 + C] − L
+    ("小寒", 5.4055), ("大寒", 20.12), ("立春", 3.87), ("雨水", 18.73), ("惊蛰", 5.63), ("春分", 20.646),
+    ("清明", 4.81), ("谷雨", 20.1), ("立夏", 5.52), ("小满", 21.04), ("芒种", 5.678), ("夏至", 21.37),
+    ("小暑", 7.108), ("大暑", 22.83), ("立秋", 7.5), ("处暑", 23.13), ("白露", 7.646), ("秋分", 23.042),
+    ("寒露", 8.318), ("霜降", 23.438), ("立冬", 7.438), ("小雪", 22.36), ("大雪", 7.18), ("冬至", 21.94),
+]
+BRANCHES = "子丑寅卯辰巳午未申酉戌亥"
+
+
+def solar_term(t: datetime) -> str:
+    """The 节气 in effect on t's date (the latest one that has begun)."""
+    y = t.year % 100
+    current = SOLAR_TERMS[-1][0]          # early January still sits in last year's 冬至
+    for i, (name, c) in enumerate(SOLAR_TERMS):
+        month = i // 2 + 1
+        leap = (y - 1) // 4 if month <= 2 else y // 4
+        if (month, int(y * 0.2422 + c) - leap) <= (t.month, t.day):
+            current = name
+    return current
+
+
+def shichen(t: datetime) -> str:
+    """The 时辰 (double-hour): 子 is 23:00–01:00, 丑 01:00–03:00, and so on."""
+    return BRANCHES[(t.hour + 1) // 2 % 12] + "时"
+
+
+def _seal(t: datetime) -> str:
+    x, y, w, h = SEAL
+    mid = x + w / 2
+    return (
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="#b9a0e9" fill-opacity=".06" '
+        f'stroke="#b9a0e9" stroke-opacity=".5"/>'
+        f'<g class="lp-lit" font-size="13" font-family="{FONT_FAMILY}" text-anchor="middle" dominant-baseline="central">'
+        f'<text x="{mid}" y="{y + h * .29:.1f}">{solar_term(t)}</text>'
+        f'<text x="{mid}" y="{y + h * .73:.1f}">{shichen(t)}</text></g>'
+    )
+
+
+# ------------------------------------------------------------------ bubbles
+# A few bubbles leave the tank floor and rise through the rings until the banner covers
+# them. Each one is described once in canvas units; every tile it crosses draws its own
+# copy with the same timing, so they pass from tile to tile without a jump.
+
+def _bubble_set() -> list[tuple[float, float, float, float, float, float]]:
+    from random import Random
+    rng = Random(778)
+    out = []
+    for x in (64, 132, 214, 287, 371, 446, 529, 588):
+        out.append((x + rng.uniform(-14, 14), rng.uniform(1.7, 3.9), rng.uniform(17, 29),
+                    rng.uniform(3, 7), rng.uniform(2.6, 4.4), rng.uniform(0, 60)))
+    return out  # x, radius, rise seconds, sway, sway seconds, phase
+
+
+BUBBLES = _bubble_set()
+
+
+def _bubble_css(t: datetime, rise: float) -> str:
+    ts = t.timestamp()
+    css = []
+    for i, (_, _, period, sway, sway_s, phase) in enumerate(BUBBLES):
+        css.append(
+            f"@keyframes bu{i}{{0%{{transform:translateY(0);opacity:0}}8%{{opacity:.75}}80%{{opacity:.55}}"
+            f"100%{{transform:translateY(-{rise:.0f}px);opacity:0}}}}"
+            f"@keyframes sw{i}{{from{{transform:translateX(-{sway:.1f}px)}}to{{transform:translateX({sway:.1f}px)}}}}"
+            f".bu{i}{{animation:bu{i} {period:.2f}s linear infinite;animation-delay:-{(ts + phase) % period:.2f}s}}"
+            f".sw{i}{{animation:sw{i} {sway_s:.2f}s ease-in-out infinite alternate;"
+            f"animation-delay:-{(ts + phase) % (2 * sway_s):.2f}s}}"
+        )
+    css.append("@media (prefers-reduced-motion:reduce){" + ",".join(f".bu{i},.sw{i}" for i in range(len(BUBBLES)))
+               + "{animation:none;opacity:0}}")
+    return "".join(css)
+
+
+def _bubbles(x0: float, y0: float, w: float, start_y: float) -> str:
+    out = []
+    for i, (x, r, *_rest) in enumerate(BUBBLES):
+        if x + r + 8 < x0 or x - r - 8 > x0 + w:
+            continue
+        out.append(
+            f'<g transform="translate({x - x0:.1f} {start_y - y0:.1f})"><g class="bu{i}"><circle class="sw{i}" r="{r:.1f}" '
+            f'fill="#92d8cf" fill-opacity=".08" stroke="#92d8cf" stroke-opacity=".75" stroke-width=".9"/></g></g>'
+        )
+    return "".join(out)
+
+
+# ------------------------------------------------------------------ tank floor
+# The banner is the top of the tank; the floor closes it at the bottom. It fades in from
+# nothing at its top edge to solid at the bottom, so the rings run into it and are
+# gradually caught. A small frog hops along it inside the same fade, so each leap
+# carries it up out of the solid floor and back down.
+
+FLOOR_FADE = '<linearGradient id="fl-fade" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/>' \
+             '<stop offset=".38" stop-color="#fff" stop-opacity=".3"/><stop offset=".74" stop-color="#fff"/></linearGradient>'
+
+
+def _floor(w: float, h: float) -> str:
+    from random import Random
+    rng = Random(1778)
+    sediment = "".join(
+        f'<circle cx="{rng.uniform(10, w - 10):.1f}" cy="{rng.uniform(h * .62, h - 7):.1f}" '
+        f'r="{rng.uniform(.5, 1.6):.1f}" fill="{rng.choice(["#b9a0e9", "#92d8cf", "#cfd9ff"])}" opacity="{rng.uniform(.12, .42):.2f}"/>'
+        for _ in range(60)
+    )
+    wave = lambda y: f"M-80 {y:.0f}Q170 {y - 14:.0f} 410 {y - 2:.0f}T910 {y:.0f}T1320 {y - 10:.0f}"
+    return (
+        '<defs><linearGradient id="fl-bg" x2="1" y2="1"><stop stop-color="#0c101d"/><stop offset=".55" stop-color="#111528"/>'
+        '<stop offset="1" stop-color="#17132a"/></linearGradient>'
+        '<radialGradient id="fl-mint"><stop stop-color="#58dbca" stop-opacity=".16"/><stop offset="1" stop-color="#58dbca" stop-opacity="0"/></radialGradient>'
+        '<radialGradient id="fl-violet"><stop stop-color="#8760e4" stop-opacity=".2"/><stop offset="1" stop-color="#8760e4" stop-opacity="0"/></radialGradient>'
+        '<linearGradient id="fl-line"><stop stop-color="#a890ee" stop-opacity="0"/><stop offset=".5" stop-color="#a890ee" stop-opacity=".7"/>'
+        '<stop offset="1" stop-color="#79d7d0" stop-opacity="0"/></linearGradient>'
+        f'<clipPath id="fl-card"><rect width="{w}" height="{h}" rx="24"/></clipPath></defs>'
+        '<style>@keyframes fl-drift{to{stroke-dashoffset:-100}}.fl-drift{animation:fl-drift 8s linear infinite}'
+        '@media (prefers-reduced-motion:reduce){.fl-drift{animation:none}}</style>'
+        f'<g clip-path="url(#fl-card)"><rect width="{w}" height="{h}" fill="url(#fl-bg)"/>'
+        f'<ellipse cx="330" cy="{h + 10}" rx="520" ry="{h * .7:.0f}" fill="url(#fl-mint)"/>'
+        f'<ellipse cx="930" cy="{h * .55:.0f}" rx="380" ry="{h * .6:.0f}" fill="url(#fl-violet)"/>'
+        f'<g fill="none" stroke="url(#fl-line)"><path d="{wave(h * .66)}" opacity=".32"/><path d="{wave(h * .8)}" opacity=".2"/>'
+        f'<path class="fl-drift" d="{wave(h * .66)}" stroke="#97e8dc" stroke-dasharray="3 22" opacity=".22"/></g>'
+        f"{sediment}</g>"
+        f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="23.5" fill="none" stroke="#a99bce" stroke-opacity=".14"/>'
+    )
+
+
+# Three pixel-art cane toads, side view, facing right: hunched warty back, a heavy brow
+# over a round gold eye, the big gland behind it, a pale belly and orange-tipped toes.
+# o outline · d dark · b body · l light · w wart · c belly · y eye · k pupil · r toes
+TOAD_SIT = [
+    "..........oooo............",
+    ".......ooollllooo...ooo...",
+    ".....oolbbwbbbbldo.oddo...",
+    "....olbbbbbbwbbbbdoyykyo..",
+    "...olbwbbbbbbbllldoyyyyoo.",
+    "..obbbbbbwbbblllldddddbbbo",
+    "..obwbbbbbbbbbllbbbbbbbbbo",
+    ".obbbbwbbbbwbbbbbbbbbbbboo",
+    ".obbbbbbbbbbbbbooooooooo..",
+    "odbbwbbbbbbcccccccccco....",
+    "odddbbbbbbccccccccccdo....",
+    "odwddbbbdcccccccccddddo...",
+    "odddddddoccccccccoodddo...",
+    "oddddddo.ooooooooo.oddo...",
+    ".oorrdo............ordo...",
+    "..oorrro..........orrrro..",
+]
+TOAD_LEAP = ["......" + r for r in TOAD_SIT[:11]] + [
+    "....oodwdddbbbcccccccccccddo",
+    "..ooddddooooooooooooooo.oddo",
+    "oodddoo..................ordo",
+    "orrro.....................orrro",
+    "oo..........................oo",
+]
+TOAD_PIXEL = 1.7      # canvas units per sprite pixel
+TOADS = [  # name, palette, seed
+    ("brown", {"o": "#2a1f17", "d": "#5a4330", "b": "#7d5f43", "l": "#a08463", "w": "#4e3a2a",
+               "c": "#cdb38c", "y": "#d8b54a", "k": "#111729", "r": "#c9774e"}, 11),
+    ("green", {"o": "#172116", "d": "#2e4427", "b": "#4a6a3d", "l": "#6f8d58", "w": "#2b3f25",
+               "c": "#b8c290", "y": "#d6c04a", "k": "#111729", "r": "#c08350"}, 23),
+    ("yellow", {"o": "#2a2410", "d": "#6a5820", "b": "#9c832e", "l": "#c2a64e", "w": "#74611f",
+                "c": "#e3d39c", "y": "#f0dc78", "k": "#111729", "r": "#c98a4e"}, 37),
+]
+
+
+def _sprite(rows: list[str], pal: dict[str, str]) -> str:
+    """Pixel rows as crisp rects (runs merged), centred on x = 0 with the feet on y = 0."""
+    width = max(len(r) for r in rows)
+    p = TOAD_PIXEL
+    x0, y0 = -width * p / 2, -len(rows) * p
+    out = []
+    for y, row in enumerate(rows):
+        x = 0
+        while x < len(row):
+            ch = row[x]
+            run = 1
+            while x + run < len(row) and row[x + run] == ch:
+                run += 1
+            if ch != ".":
+                out.append(f'<rect x="{x0 + x * p:.2f}" y="{y0 + y * p:.2f}" width="{run * p + .05:.2f}" height="{p + .05:.2f}" fill="{pal[ch]}"/>')
+            x += run
+    return f'<g shape-rendering="crispEdges">{"".join(out)}</g>'
+
+
+def _toad_art(pal: dict[str, str]) -> tuple[str, str]:
+    return _sprite(TOAD_SIT, pal), _sprite(TOAD_LEAP, pal)
+
+
+def _toad_track(seed: int, left: float, right: float):
+    """A random but repeatable round trip: hop lengths, pauses, airtime and height all vary."""
+    from random import Random
+    rng = Random(seed)
+    pace = rng.uniform(.8, 1.25)          # this toad's overall speed
+    xs, ys, face, pose = [], [], [], []
+    clock, x = 0.0, left
+    for d in (1, -1):
+        face.append((clock, d))
+        goal = right if d > 0 else left
+        while abs(goal - x) > 1:
+            dist = min(rng.uniform(60, 150), abs(goal - x))
+            rest = rng.choice([rng.uniform(.4, 1.1), rng.uniform(1.1, 2.6), rng.uniform(2.6, 5.5)])
+            air = (.38 + dist / 300) / pace
+            height = rng.uniform(44, 82) * (.6 + dist / 300)
+            xs.append((clock, x)); ys.append((clock, 0, "rest")); pose.append((clock, 0))
+            clock += rest
+            xs.append((clock, x)); ys.append((clock, 0, "up")); pose.append((clock, 1))
+            ys.append((clock + air / 2, -height, "down"))
+            clock += air
+            x += d * dist
+        xs.append((clock, x)); ys.append((clock, 0, "rest")); pose.append((clock, 0))
+        clock += rng.uniform(1.5, 4.5)    # sit a while at the end before turning round
+    return clock, xs, ys, face, pose, rng.uniform(0, clock)
+
+
+def _toads(t: datetime, w: float, ground: float) -> tuple[str, str]:
+    """Markup and CSS for the three toads hopping along the floor, each in step with real time."""
+    left, right = 50.0, w - 50.0
+    ease = {"up": "cubic-bezier(.2,.62,.42,1)", "down": "cubic-bezier(.58,0,.8,.38)", "rest": "linear"}
+    css, markup = [], []
+    for name, pal, seed in TOADS:
+        # each toad turns round at its own spots, so they never pile up at the ends
+        period, xs, ys, face, pose, phase = _toad_track(seed, left + (seed % 5) * 14, right - (seed % 7) * 11)
+        pct = lambda s: f"{s / period * 100:.4f}%"
+        k = f"td-{name}"
+        css.append(
+            f"@keyframes {k}-x{{{''.join(f'{pct(s)}{{transform:translateX({v:.1f}px)}}' for s, v in xs)}100%{{transform:translateX({left:.1f}px)}}}}"
+            f"@keyframes {k}-y{{{''.join(f'{pct(s)}{{transform:translateY({v:.1f}px);animation-timing-function:{ease[e]}}}' for s, v, e in ys)}100%{{transform:translateY(0)}}}}"
+            f"@keyframes {k}-f{{{''.join(f'{pct(s)}{{transform:scaleX({v})}}' for s, v in face)}100%{{transform:scaleX(1)}}}}"
+            f"@keyframes {k}-l{{{''.join(f'{pct(s)}{{opacity:{v}}}' for s, v in pose)}100%{{opacity:0}}}}"
+            f"@keyframes {k}-s{{{''.join(f'{pct(s)}{{opacity:{1 - v}}}' for s, v in pose)}100%{{opacity:1}}}}"
+        )
+        common = f"{period:.3f}s infinite;animation-delay:{-((t.timestamp() + phase) % period):.3f}s"
+        css.append(
+            f".{k}-x{{animation:{k}-x linear {common}}}.{k}-y{{animation:{k}-y {common}}}"
+            f".{k}-f{{transform-box:view-box;transform-origin:0 0;animation:{k}-f step-end {common}}}"
+            f".{k}-l{{animation:{k}-l step-end {common}}}.{k}-s{{animation:{k}-s step-end {common}}}"
+        )
+        sit, leap = _toad_art(pal)
+        rest_x = left + (right - left) * (seed % 7) / 7      # where it sits if motion is turned off
+        markup.append(
+            f'<g transform="translate(0 {ground})"><g class="{k}-x" style="transform:translateX({rest_x:.1f}px)">'
+            f'<g class="{k}-y"><g class="{k}-f"><g class="{k}-s">{sit}</g><g class="{k}-l" opacity="0">{leap}</g></g></g></g></g>'
+        )
+    names = ",".join(f".td-{n}-{p}" for n, *_ in TOADS for p in "xyfls")
+    css.append(f"@media (prefers-reduced-motion:reduce){{{names}{{animation:none}}}}")
+    return "".join(markup), "".join(css)
 
 
 # ------------------------------------------------------------------ sparkline
@@ -287,48 +539,60 @@ def _view(x0: float, y0: float, w: float, h: float):
 Y_INTRO = ROW_STRIP
 Y_STACK = Y_INTRO + ROW_INTRO
 Y_TAIL = Y_STACK + ROW_STACK
-TEXT_MID = 49               # the description and the link badges share this centre line in the intro row
+Y_FLOOR = Y_TAIL + ROW_TAIL
+ROW_FLOOR = 150
+TOAD_GROUND = ROW_FLOOR - 20      # the toads sit in the solid lower part of the floor
+BUBBLE_START = Y_FLOOR + ROW_FLOOR - 18   # bubbles leave from the bottom of the floor...
+BUBBLE_RISE = BUBBLE_START + 12           # ...and rise until the banner covers them
+TEXT_MID = ROW_INTRO / 2    # the description is centred on the Orca card beside it
+BADGE_Y = 6                 # language badges and link badges share this top line in the stack row
 
 
 def rows() -> list[tuple[str, float, float, float, float]]:
-    """(name, x0, y0, width, height) of every live clock tile, in canvas units.
+    """(name, x0, y0, width, height) of every live tile, in canvas units.
 
-    Only the left column carries rings (the clock never reaches past x = 600), so the
-    right column is plain linked images: the badges and the Orca card.
+    Rings only reach the left column (the clock never passes x = 600). The right column
+    is the linked badges and the Orca card; the floor closes the tank across the full width.
     """
     return [
         ("strip", 0, 0, W, ROW_STRIP),
         ("intro", 0, Y_INTRO, COL_X, ROW_INTRO),
         ("stack", 0, Y_STACK, COL_X, ROW_STACK),
         ("tail", 0, Y_TAIL, COL_X, ROW_TAIL),
+        ("floor", 0, Y_FLOOR, W, ROW_FLOOR),
     ]
 
 
 def tiles(t: datetime, days: list[dict]) -> dict[str, str]:
     """Every live tile for one moment, keyed by file stem."""
-    style = _keyframes(t)
+    style = _keyframes(t) + _bubble_css(t, BUBBLE_RISE)
     out = {}
     for name, x0, y0, w, h in rows():
         view = _view(x0, y0, w, h)
         rings = _clock(t, view, highlight=name == "strip", guide=name == "strip")
+        bubbles = _bubbles(x0, y0, w, BUBBLE_START)
         if name == "strip":
-            body = (rings + f'<path d="M{DIVIDER_X} 22V{h - 22}" stroke="#b9a0e9" stroke-opacity=".16"/>'
+            body = (rings + bubbles + _seal(t) + f'<path d="M{DIVIDER_X} 22V{h - 22}" stroke="#b9a0e9" stroke-opacity=".16"/>'
                     + sparkline(days, *SPARK))
-            title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z}, beside {sum(d['count'] for d in days)} public contributions over {len(days)} days"
+            title = (f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M %Z} ({solar_term(t)}, {shichen(t)}), "
+                     f"beside {sum(d['count'] for d in days)} public contributions over {len(days)} days")
             out[name] = _svg(w, h, body, title=title, style=style)
         elif name == "intro":
             text = (f'<text class="lp-txt" x="0" y="{TEXT_MID + ABOUT_SIZE * .36:.1f}" font-size="{ABOUT_SIZE}" '
                     f'font-family="{UI_FONT}">{escape(ABOUT)}</text>')
-            out[name] = _svg(w, h, rings + text, title=ABOUT, style=style)
+            out[name] = _svg(w, h, rings + bubbles + text, title=ABOUT, style=style)
         elif name == "stack":
-            out[name] = _svg(w, h, rings + _badge_row(LANGS, 0, 6), title="Python, TypeScript, Rust, React, Tauri, SQLite", style=style)
+            out[name] = _svg(w, h, rings + bubbles + _badge_row(LANGS, 0, BADGE_Y),
+                             title="Python, TypeScript, Rust, React, Tauri, SQLite", style=style)
+        elif name == "tail":
+            out[name] = _svg(w, h, rings + bubbles, title="", style=style)
         else:
-            # the clock fades out here, just above the toolbox
-            defs = (f'<linearGradient id="fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="{h:.1f}">'
-                    '<stop stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-                    f'<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="{w}" height="{h:.1f}">'
-                    f'<rect width="{w}" height="{h:.1f}" fill="url(#fade)"/></mask>')
-            out[name] = _svg(w, h, f'<g mask="url(#m)">{rings}</g>', title="", style=style, defs=defs)
+            # rings run on underneath; the floor and the frog fade in over them, top to bottom
+            frog, frog_css = _toads(t, w, TOAD_GROUND)
+            defs = (FLOOR_FADE + f'<mask id="fl-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="{w + 80}" height="{h + 80}">'
+                    f'<rect width="{w}" height="{h}" fill="url(#fl-fade)"/></mask>')
+            body = rings + f'<g mask="url(#fl-mask)">{_floor(w, h)}{frog}</g>' + bubbles
+            out[name] = _svg(w, h, body, title="", style=style + frog_css, defs=defs)
     return out
 
 
@@ -337,8 +601,8 @@ def link_tile(name: str) -> str:
     widths = dict(zip([n for n, _, _ in LINKS], link_widths()))
     label = {n: l for n, _, l in LINKS}[name]
     bw, uri = _badge(name)
-    body = f'<image x="0" y="{TEXT_MID - BADGE_H / 2:.1f}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
-    return _svg(widths[name], ROW_INTRO, body, title=label)
+    body = f'<image x="0" y="{BADGE_Y}" width="{bw:.1f}" height="{BADGE_H}" href="{uri}"/>'
+    return _svg(widths[name], ROW_STACK, body, title=label)
 
 
 def readme_block(base: str) -> str:
@@ -354,9 +618,10 @@ def readme_block(base: str) -> str:
         '<p>\n'
         '  <img src="assets/banner.svg?v=11" alt="s4lmon778 — an ASCII salmon and Mobius ribbon" width="100%" align="top" /><br>\n'
         f'  <img src="{base}/strip.svg" alt="罗盘 clock in Pacific time beside 90 days of public GitHub activity" width="100%" align="top" /><br>\n'
-        f'  <img src="{base}/intro.svg" alt="{ABOUT}" width="{col}" align="top" />{links}<br>\n'
-        f'  <img src="{base}/stack.svg" alt="Python, TypeScript, Rust, React, Tauri, SQLite" width="{col}" align="top" />'
+        f'  <img src="{base}/intro.svg" alt="{ABOUT}" width="{col}" align="top" />'
         f'<a href="https://github.com/stablyai/orca"><img src="assets/orca-contributor.svg" alt="Contributor to Orca · 135k+ GitHub stars" width="{pct(COL_W)}" align="top" /></a><br>\n'
-        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" />\n'
+        f'  <img src="{base}/stack.svg" alt="Python, TypeScript, Rust, React, Tauri, SQLite" width="{col}" align="top" />{links}<br>\n'
+        f'  <img src="{base}/tail.svg" alt="" width="{col}" align="top" /><br>\n'
+        f'  <img src="{base}/floor.svg" alt="" width="100%" align="top" />\n'
         '</p>\n'
     )

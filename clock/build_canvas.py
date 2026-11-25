@@ -1,6 +1,6 @@
 """Draw the live clock tiles that sit under the banner.
 
-    python clock/build_canvas.py OUTDIR      # live tiles: strip, intro, stack, tail
+    python clock/build_canvas.py OUTDIR      # live tiles: strip, intro, stack, tail, floor
     python clock/build_canvas.py --static    # the linked badge tiles in assets/ (no clock reaches them)
 
 Activity comes from the anonymous public contribution calendar (the same view any

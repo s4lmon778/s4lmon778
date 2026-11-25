@@ -1,7 +1,7 @@
 name: Clock
 
 # Redraws the 罗盘 clock tiles that sit under the banner (strip, intro, stack,
-# tail) and force-pushes them as the only commit on the `clock`
+# tail, floor) and force-pushes them as the only commit on the `clock`
 # branch, so main's history stays clean. Between runs the rings keep turning on
 # their own with CSS, so a slow refresh is enough.
 on:
