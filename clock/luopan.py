@@ -165,8 +165,15 @@ def _ring_markup(t: datetime, view, *, only_current: bool = False) -> str:
     return "".join(out)
 
 
+SECOND_TURN = 0.35   # seconds the seconds ring spends turning each tick
+
+
 def _keyframes(t: datetime) -> str:
-    """Hour/minute/second rings advance one label per tick with a 1 s ease, like the wallpaper.
+    """Hour/minute/second rings rest on a label, then ease to the next one, like the wallpaper.
+
+    Hours and minutes turn during the last second of their tick. The seconds ring turns in
+    the last SECOND_TURN of each second and rests the rest of the time, so the current
+    second sits squarely in the bright row instead of always being caught halfway.
 
     Each ring loops over its full cycle; a negative delay puts it at the current phase
     when the image loads. Every tile is drawn from the same moment, so they turn together.
@@ -179,8 +186,8 @@ def _keyframes(t: datetime) -> str:
         frames = []
         for k in range(n):
             frames.append(f"{k * tick / period * 100:.5f}%{{transform:rotate({-k * step:.3f}deg)}}")
-            if tick > 1:   # rest on label k, then turn to k+1 during the last second
-                frames.append(f"{(k * tick + tick - 1) / period * 100:.5f}%{{transform:rotate({-k * step:.3f}deg)}}")
+            turn = 1.0 if tick > 1 else SECOND_TURN   # rest on label k, then turn to k+1
+            frames.append(f"{(k * tick + tick - turn) / period * 100:.5f}%{{transform:rotate({-k * step:.3f}deg)}}")
         frames.append("100%{transform:rotate(-360deg)}")
         css.append(f"@keyframes lp-{key}{{{''.join(frames)}}}")
         rest = -int(phase[key] // tick) * step
