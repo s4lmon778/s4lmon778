@@ -674,12 +674,18 @@ def rows() -> list[tuple[str, float, float, float, float]]:
     ]
 
 
+# Every label is centred on its line. Set on each <text>, not only on the group: Safari and
+# the iPhone GitHub app don't pass dominant-baseline down from a <g>, so there the labels sat
+# on their baseline instead, higher than the bright row, which clipped their tops.
+TEXT_CENTRED = "text{dominant-baseline:central}"
+
+
 def clock_svg(t: datetime, wide: bool = False) -> str:
     """The clock image for moment t. The live endpoint (api/clock.py) calls this on every
     profile view, so the clock shows the real California time when the page loads."""
     w = WIDE_W if wide else COL_X
     view = _view(0, 0, w, CLOCK_H)
-    style = _keyframes(t) + (_bubble_css(t, BUBBLE_RISE) if BUBBLES else "") + (_climber_css(t) if CLIMBER else "")
+    style = TEXT_CENTRED + _keyframes(t) + (_bubble_css(t, BUBBLE_RISE) if BUBBLES else "") + (_climber_css(t) if CLIMBER else "")
     body = (_clock(t, view, highlight=True, guide=False, climber=False) + (_bubbles(0, 0, w, BUBBLE_START) if BUBBLES else "")
             + _seal(t) + (_climber() if CLIMBER else ""))
     title = f"罗盘 clock in Pacific time, drawn {t:%Y-%m-%d %H:%M:%S %Z} ({solar_term(t)}, {shichen(t)})"
